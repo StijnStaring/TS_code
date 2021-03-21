@@ -9,12 +9,12 @@ from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import casadi as ca
 
-def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16):
+def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = True):
     plt.figure(figsize=figsize)
     ax1 = plt.gca()
     plt.rc('legend',fontsize=fontsize_legend)
     plt.title(titel, fontsize=fontsize_titel, fontweight = 'bold')
-    plt.grid(True)
+    plt.grid(grid)
     plt.xlabel(xlabel, fontsize=fontsize_axis)
     plt.ylabel(ylabel, fontsize=fontsize_axis)
     for tick in ax1.xaxis.get_major_ticks():
@@ -28,7 +28,7 @@ def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,
 
 # The model will not always produce an output --> can be that the previous day is not known
 def base_model_week_before(test_dates: pd.DatetimeIndex,serie: pd.Series,amount_days:int = 7):
-    base_forecast = pd.Series(index= test_dates,name= 'base_forecast: ' + str(amount_days) + ' days')
+    base_forecast = pd.Series(index= test_dates,name= 'base_forecast: ' + str(amount_days) + ' day(s)')
     for d in test_dates:
         get_date = d + dt.timedelta(days=-amount_days)
         forecast = serie.loc[get_date]
@@ -207,6 +207,48 @@ def MAPE_optimization(training_days:pd.DatetimeIndex,serie:pd.Series,time_steps:
         stock[index] = sol.value(p)
 
     return stock
+
+# Evaluation metrics
+def RMSE(forecast: pd.Series,real: pd.Series):
+    return np.sqrt(sum((forecast.values - real.values)**2)/len(forecast.values))
+
+def MSE(forecast: pd.Series,real: pd.Series):
+    return sum((forecast.values - real.values)**2)/len(forecast.values)
+
+def NRMSE(forecast: pd.Series,real: pd.Series):
+    ymax = real.max()
+    ymin = real.min()
+    RMSE = np.sqrt(sum((forecast.values - real.values)**2)/len(forecast.values))
+    return RMSE/(ymax-ymin)
+
+def MAE(forecast: pd.Series,real: pd.Series):
+    return sum(abs(forecast.values - real.values))/len(forecast.values)
+
+def MAPE(forecast: pd.Series,real: pd.Series):
+    return sum(abs((forecast.values - real.values)/real.values))/len(forecast.values)
+
+def Switcher(name: str,forecast,real_values):
+    switcher = {
+                "MSE": MSE(forecast,real_values),
+                "RMSE": RMSE(forecast,real_values),
+                "NRMSE": NRMSE(forecast, real_values),
+                "MAE": MAE(forecast, real_values),
+                "MAPE": MAPE(forecast, real_values),
+            }
+    return switcher.get(name)
+
+def autolabel(rects,ax):
+    """
+    Attach a text label above each bar displaying its height
+    """
+    for rect in rects:
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                '%s' % np.around(height,2),
+                ha='center', va='bottom', fontweight='bold',fontsize=16)
+
+
+
 
 
 
