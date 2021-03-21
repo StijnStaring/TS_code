@@ -35,7 +35,7 @@ av_temperature.index = pd.to_datetime(av_temperature.index)
 
 vertical_stack = pd.DataFrame()
 
-for col_name in fullYeardata.columns[0:1]:
+for col_name in fullYeardata.columns:
     TS = fullYeardata[col_name]
     TS_temperature = av_temperature[col_name]
     TS_december = TS[TS.index.month == 12]
