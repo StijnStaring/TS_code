@@ -193,7 +193,7 @@ def MAPE_optimization(training_days:pd.DatetimeIndex,serie:pd.Series,time_steps:
         # remove zero probabilities
         probability = probability[probability != 0]
         discretized_values = np.array(discretized_values)
-
+        p_hat = discretized_values.mean()
         if len(probability) != len(discretized_values) or np.around(sum(probability),2) != 1:
             print(sum(probability))
             raise Exception("The lenghts are not equal or prob is not one.")
@@ -204,14 +204,26 @@ def MAPE_optimization(training_days:pd.DatetimeIndex,serie:pd.Series,time_steps:
         obj = 0
         for j in np.arange(0,len(discretized_values)):
             pi = discretized_values[j]
-            obj = obj + probability[j]*((p-pi)/pi)**2
+            if pi != 0:
+                ei =  probability[j]*((p-pi)/pi)
+                Li = opti.variable()
+                obj = obj + Li
+                opti.subject_to(opti.bounded(-Li, ei, Li))
         opti.minimize(obj)
         opti.subject_to(p>=0)
-        opti.set_initial(p,0.3)
+        opti.set_initial(p,p_hat)
         opti.solver('ipopt')
         sol = opti.solve()
         print(100*"#")
         stock[index] = sol.value(p)
+
+        # for j in np.arange(0, len(discrete_values)):
+        #     pi = discrete_values[j]
+        #     ei = probability[j] * ((p - pi) / pi)
+        #     Li = opti.variable()
+        #     obj = obj + Li
+        #     opti.subject_to(opti.bounded(-Li, ei, Li))
+        # opti.minimize(obj)
 
     return stock
 

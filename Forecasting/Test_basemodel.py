@@ -4,7 +4,7 @@ The test set used are the 31 days of December of the 261 time-series with measur
 Forecasts are only included in the evaluation metrics when all the different models output a forecast
 different then nan.
 
-Evaluation metrics used: MSE, RMSE, NRMSE, MAE, MAPE
+Evaluation metrics used: MSE, RMSE, NRMSE, MAE, (MAPE is discarted because real values are sometimes zero)
 
 model 1. find most similar consumption in trainingset based on id house, which day, which time, which temperature
 model 2. previous day
@@ -36,7 +36,7 @@ av_temperature.index = pd.to_datetime(av_temperature.index)
 vertical_stack = pd.DataFrame()
 counter = 0
 total_count = len(fullYeardata.columns)
-for col_name in fullYeardata.columns:
+for col_name in fullYeardata.columns[30:31]:
     TS = fullYeardata[col_name]
     TS_temperature = av_temperature[col_name]
     TS_december = TS[TS.index.month == 12]
@@ -71,7 +71,7 @@ for col_name in fullYeardata.columns:
 # Evaluate the different methods:
 vertical_stack.dropna(inplace=True)
 real_values = vertical_stack['real_values']
-for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
+for method in ["MSE","RMSE","NRMSE","MAE",]:
     outputs = dict()
     for col_name in vertical_stack.columns[:-1]: # expects the real values at the end of the DataFrame
         forecast = vertical_stack[col_name]
