@@ -263,7 +263,7 @@ def autolabel(rects,ax):
     for rect in rects:
         height = rect.get_height()
         ax.text(rect.get_x() + rect.get_width()/2., 1.01*height,
-                '%s' % np.around(height,2),
+                '%s' % np.around(height,4),
                 ha='center', va='bottom', fontweight='bold',fontsize=16)
 
 
