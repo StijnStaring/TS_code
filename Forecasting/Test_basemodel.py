@@ -34,35 +34,38 @@ av_temperature = av_temperature.transpose()
 av_temperature.index = pd.to_datetime(av_temperature.index)
 
 vertical_stack = pd.DataFrame()
-
-for col_name in fullYeardata.columns:
+counter = 0
+total_count = len(fullYeardata.columns)
+for col_name in fullYeardata.columns[15:16]:
     TS = fullYeardata[col_name]
     TS_temperature = av_temperature[col_name]
     TS_december = TS[TS.index.month == 12]
 
-    forecast1 = find_most_similar_day(TS_december.index,TS,TS_temperature)
-    forecast2 = base_model_week_before(TS_december.index,TS,amount_days=1)
-    forecast3 = base_model_week_before(TS_december.index, TS, amount_days=7)
-    forecast4 = mean_forecast(TS_december.index,TS)
-    forecast5 = MAPE_estimator(TS_december.index,TS)
+    forecast1 = find_most_similar_day(TS_december.index,TS,TS_temperature,time_steps =48)
+    # forecast2 = base_model_week_before(TS_december.index,TS,amount_days=1)
+    # forecast3 = base_model_week_before(TS_december.index, TS, amount_days=7)
+    # forecast4 = mean_forecast(TS_december.index,TS)
+    # forecast5 = MAPE_estimator(TS_december.index,TS)
 
     forecast1 = forecast1.reset_index(drop=True)
-    forecast2 = forecast2.reset_index(drop=True)
-    forecast3 = forecast3.reset_index(drop=True)
-    forecast4 = forecast4.reset_index(drop=True)
-    forecast5 = forecast5.reset_index(drop=True)
+    # forecast2 = forecast2.reset_index(drop=True)
+    # forecast3 = forecast3.reset_index(drop=True)
+    # forecast4 = forecast4.reset_index(drop=True)
+    # forecast5 = forecast5.reset_index(drop=True)
     real_values = TS_december.reset_index(drop=True)
 
     df = pd.DataFrame()
     df[forecast1.name] = forecast1
-    df[forecast2.name] = forecast2
-    df[forecast3.name] = forecast3
-    df[forecast4.name] = forecast4
-    df[forecast5.name] = forecast5
+    # df[forecast2.name] = forecast2
+    # df[forecast3.name] = forecast3
+    # df[forecast4.name] = forecast4
+    # df[forecast5.name] = forecast5
     df['real_values'] = real_values
 
 
     vertical_stack = pd.concat([vertical_stack,df], axis=0, ignore_index=True)
+    counter += 1
+    print("%s of %s time-series are trained.\n"%(counter,total_count))
 
 
 # Evaluate the different methods:

@@ -68,11 +68,11 @@ def norm(serie: pd.Series):
     norm_serie = pd.Series(data=norm_serie,index=serie.index)
     return norm_serie
 
-def get_closest_day(training_days: pd.DatetimeIndex,temperature: pd.Series,daily_temp:float):
+def get_closest_day(training_days: pd.DatetimeIndex,temperature: pd.Series,daily_temp:float)-> pd.Timestamp:
     day = abs(temperature[training_days] - daily_temp).idxmin()
     return day
 
-def find_most_similar_day(test_dates: pd.DatetimeIndex,serie: pd.Series,temperature: pd.Series):
+def find_most_similar_day(test_dates: pd.DatetimeIndex,serie: pd.Series,temperature: pd.Series,time_steps:int):
     # The assumption is made that the test_dates are one continuous sequence of days
     daily_test_dates = pd.date_range(start=test_dates[0],end=test_dates[-1],freq='D')
     base_forecast = pd.Series(index= test_dates,name= 'closest_day_forecast')
@@ -83,6 +83,13 @@ def find_most_similar_day(test_dates: pd.DatetimeIndex,serie: pd.Series,temperat
         holidays = EnglandAndWalesHolidayCalendar().holidays(start=pd.Timestamp('2017-01-01'),end=day + dt.timedelta(-1))
         training_days = training_days.symmetric_difference(holidays)
         day_temp = temperature[temperature.index.dayofyear == day.dayofyear][0]
+
+        # if have no information about the temperature of the day --> can't forecast the day
+        if np.isnan(day_temp) :
+            forecast = np.ones(time_steps)
+            forecast[:] = np.nan
+            base_forecast[base_forecast.index.dayofyear == day.dayofyear] = forecast
+            continue
 
         if day in holidays:
             # look for holiday and Sunday (to get more days) --> we know that similarity is highest with Sunday
