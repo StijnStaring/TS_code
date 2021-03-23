@@ -9,7 +9,7 @@ from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import casadi as ca
 
-def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = True):
+def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = False):
     plt.figure(figsize=figsize)
     ax1 = plt.gca()
     plt.rc('legend',fontsize=fontsize_legend)
