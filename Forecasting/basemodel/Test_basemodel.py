@@ -71,7 +71,7 @@ for col_name in fullYeardata.columns[30:31]:
 # Evaluate the different methods:
 vertical_stack.dropna(inplace=True)
 real_values = vertical_stack['real_values']
-for method in ["MSE","RMSE","NRMSE","MAE",]:
+for method in ["MSE","RMSE","NRMSE","MAE"]:
     outputs = dict()
     for col_name in vertical_stack.columns[:-1]: # expects the real values at the end of the DataFrame
         forecast = vertical_stack[col_name]
