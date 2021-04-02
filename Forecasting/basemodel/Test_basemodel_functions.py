@@ -4,12 +4,27 @@ Overview of the different basemodels.
 """
 import datetime as dt
 import pandas as pd # pandas
+from pandas.tseries.holiday import (
+    AbstractHolidayCalendar, DateOffset, EasterMonday,
+    GoodFriday, Holiday, MO,
+    next_monday, next_monday_or_tuesday)
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import casadi as ca
+import warnings as wn
+wn.filterwarnings(action='ignore')
+
+plt.rc('axes', linewidth=2)
+plt.rc('axes', labelsize= 16)
+plt.rc('axes',titlesize = 18)
+plt.rc('legend',fontsize=14)
+plt.rc('xtick', labelsize=16)
+plt.rc('ytick', labelsize=16)
+plt.rc('figure',figsize=(10,8))
 
 def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = False):
+
     plt.figure(figsize=figsize)
     ax1 = plt.gca()
     plt.rc('legend',fontsize=fontsize_legend)
@@ -37,10 +52,7 @@ def base_model_week_before(test_dates: pd.DatetimeIndex,serie: pd.Series,amount_
     return base_forecast
 
 # importing the holidays
-from pandas.tseries.holiday import (
-    AbstractHolidayCalendar, DateOffset, EasterMonday,
-    GoodFriday, Holiday, MO,
-    next_monday, next_monday_or_tuesday)
+
 class EnglandAndWalesHolidayCalendar(AbstractHolidayCalendar):
     rules = [
         Holiday('New Years Day', month=1, day=1, observance=next_monday),

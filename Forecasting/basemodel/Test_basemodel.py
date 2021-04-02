@@ -13,20 +13,8 @@ model 4. Mean forecast based on time of day and type of day
 model 5. Empirical mape minimization
 
 """
-
-import datetime as dt
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from Test_basemodel_functions import *
 
-plt.rc('axes', linewidth=2)
-plt.rc('axes', labelsize= 16)
-plt.rc('axes',titlesize = 18)
-plt.rc('legend',fontsize=14)
-plt.rc('xtick', labelsize=16)
-plt.rc('ytick', labelsize=16)
-plt.rc('figure',figsize=(10,8))
 
 fullYeardata = pd.read_csv("D:\Onedrive\Leuven\Final project\data\Forecasting_writtendata\FullYear.csv",index_col= "date",parse_dates= True)
 av_temperature = pd.read_csv("D:\Onedrive\Leuven\Final project\data\weather-avg.csv",index_col='meter_id')
