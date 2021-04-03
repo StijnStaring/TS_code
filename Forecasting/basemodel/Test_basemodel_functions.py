@@ -249,8 +249,8 @@ def MSE(forecast: pd.Series,real: pd.Series):
 def NRMSE(forecast: pd.Series,real: pd.Series):
     ymax = real.max()
     ymin = real.min()
-    RMSE = np.sqrt(sum((forecast.values - real.values)**2)/len(forecast.values))
-    return RMSE/(ymax-ymin)
+    RMSE_value = RMSE(forecast,real)
+    return RMSE_value/(ymax-ymin)
 
 def MAE(forecast: pd.Series,real: pd.Series):
     return sum(abs(forecast.values - real.values))/len(forecast.values)

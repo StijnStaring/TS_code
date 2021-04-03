@@ -8,9 +8,9 @@ wn.filterwarnings(action='ignore')
 from Test_basemodel_functions import EnglandAndWalesHolidayCalendar
 
 
-def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = False):
+def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = False, dpi = 100):
 
-    plt.figure(figsize=figsize)
+    plt.figure(figsize=figsize, dpi= dpi)
     ax1 = plt.gca()
     plt.rc('legend',fontsize=fontsize_legend)
     plt.title(titel, fontsize=fontsize_titel, fontweight = 'bold')
