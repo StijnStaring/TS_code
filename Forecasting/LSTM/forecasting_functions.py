@@ -27,10 +27,12 @@ class forecast_setting:
         self.patience = patience
         self.shuffle = shuffle
 
+    # def set_evaluation:
+
 
 class time_serie:
 
-    def __init__(self, ts: pd.Series, av_temperature: pd.DataFrame, settings: forecast_setting):
+    def __init__(self, ts: pd.Series, av_temperature: pd.DataFrame):
         self.name = ts.name
         self.serie = ts
         self.temperature = av_temperature[self.name]
@@ -57,6 +59,12 @@ class time_serie:
         self.training_true = training_true
         self.test_true = test_true
 
+def get_all_days_of_year(serie: pd.Series)->set:
+    collection = set()
+    for date in serie.index:
+        collection.add(date.dayofyear)
+    return collection
+
 def visualize_loss(history):
     loss = history.history["loss"]
     val_loss = history.history["val_loss"]
@@ -67,11 +75,14 @@ def visualize_loss(history):
     plt.legend()
     # plt.show()
 
-def generate_training_validation_division(data: np.ndarray, batch_size: int = 32, ratio: float = 0.9):
+def generate_training_validation_division(data: np.ndarray, reference: np.array, batch_size: int = 32, ratio: float = 0.9):
     # policy is that the oldest data is thrown away.
     # data should be made compatible with the chosen batch size.
     if not len(data.shape) == 3:
         raise Exception("Input data is not of the correct shape: samples x timesteps x features.")
+    if not len(data) == len(reference):
+        raise Exception("The reference should have equal length as the observations.")
+
     amount_samples = data.shape[0]
     amount_training = np.around(amount_samples* ratio,0)
     amount_validation = amount_samples - amount_training
@@ -79,22 +90,21 @@ def generate_training_validation_division(data: np.ndarray, batch_size: int = 32
     if rest_val <= batch_size/2 and (amount_validation - rest_val)//batch_size>=1: # remove validation values
         value = int(amount_validation - rest_val)
         validation = data[-1*value:,:,:]
+        validation_ref = reference[-1*value:,:]
         less_training = len(data[0:int(amount_samples - value),:,:]) % batch_size
         training = data[int(less_training):int(amount_samples - value), :, :]
-        return training, validation
+        training_ref = reference[int(less_training):int(amount_samples - value), :]
+        return (training, training_ref), (validation, validation_ref)
 
     else: # add training values to the validation set
         value = int(amount_validation + batch_size - rest_val)
         validation = data[-1*value:,:,:]
+        validation_ref = reference[-1*value:,:]
         less_training = len(data[0:int(amount_samples - value),:,:]) % batch_size
         training = data[int(less_training):int(amount_samples - value), :, :]
-        return training, validation
+        training_ref = reference[int(less_training):int(amount_samples - value), :]
+        return (training, training_ref), (validation, validation_ref)
 
-def compile_data(training, validation, temperature_norm, lag_value):
-    X, y = input_output_LSTM(training, temperature_norm, lag_value)
-    X_val, y_val = input_output_LSTM(validation, temperature_norm, lag_value)
-
-    return (X,y), (X_val, y_val)
 
 # maybe better to use the relu function instead of tanh.
 # data is between 0 and one
@@ -105,7 +115,7 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
     model = Sequential()
     # no initial state is given --> hidden state are tensors filled with zeros
     # dropout=None,recurrent_dropout=None
-    model.add(LSTM(units=setting.units_LSTM,activation= setting.activation,input_shape=(X.shape[1],X.shape[2])))
+    model.add(LSTM(units=setting.units_LSTM,activation= setting.activation,batch_input_shape=(None,X.shape[1],X.shape[2]))) # no need to specify the batch size when stateless
     model.add(Dense(units=setting.units_dense,activation='relu',kernel_regularizer='l2'))
     # model.add(Dropout(0.10))
     model.add(Dense(units=y.shape[1],activation='relu',kernel_regularizer='l2'))
@@ -113,6 +123,38 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
     # shuffle false --> not shuffle the training data
     model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+    # save the trained_model
+    if save:
+        file_path = "model.h5"
+        save_model(model,file_path)
+
+    return model,history
+
+def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False):
+
+    history = History()
+    regularizers.l2(l=setting.regularization_parameter)
+    model = None
+    weights = None
+    for i in range(2):
+        if i == 0:
+            batch_size = setting.batch_size_parameter
+        else:
+            batch_size = 1
+        model = Sequential()
+        # dropout=None,recurrent_dropout=None
+        model.add(LSTM(units=setting.units_LSTM,stateful= True, activation= setting.activation,batch_input_shape=(batch_size,X.shape[1],X.shape[2])))
+        model.add(Dense(units=setting.units_dense,activation='relu',kernel_regularizer='l2'))
+        # model.add(Dropout(0.10))
+        model.add(Dense(units=y.shape[1],activation='relu',kernel_regularizer='l2'))
+        model.compile(optimizer='adam',loss='mse')
+        early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
+        if i == 0:
+            model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+            weights = model.get_weights()
+        else:
+            # Now the batch size is changed to one
+            model.set_weights(weights)
     # save the trained_model
     if save:
         file_path = "model.h5"
