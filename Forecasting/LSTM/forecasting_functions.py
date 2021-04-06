@@ -124,9 +124,9 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
     if setting.layers_LSTM == 1:
         model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
     else:
-        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequence = True, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
         for _ in np.arange(1,setting.layers_LSTM-1):
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequence=True))
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences=True))
         model.add(LSTM(units=setting.units_LSTM, activation=setting.activation))
 
     for _ in range(setting.layers_dense):
@@ -163,12 +163,13 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
         model = Sequential()
         # dropout=None,recurrent_dropout=None
         if setting.layers_LSTM == 1:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_state= True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
         else:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_state= True, return_sequence=True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
             for _ in np.arange(1, setting.layers_LSTM - 1):
-                model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_state= True, return_sequence=True))
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_state= True))
+
+                model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True))
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True))
 
         for _ in range(setting.layers_dense):
             model.add(Dense(units=setting.units_dense, activation='relu', kernel_regularizer='l2'))
