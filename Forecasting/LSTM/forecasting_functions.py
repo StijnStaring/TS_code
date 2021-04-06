@@ -8,7 +8,7 @@ wn.filterwarnings(action='ignore')
 from Test_basemodel_functions import EnglandAndWalesHolidayCalendar
 from keras.layers import Dense,  LSTM,Embedding
 from keras.models import Sequential, save_model, load_model
-from keras import regularizers
+from keras import regularizers, optimizers
 from keras.callbacks import EarlyStopping,ModelCheckpoint, History
 
 from Test_basemodel_functions import Switcher
@@ -16,7 +16,7 @@ from Test_basemodel_functions import Switcher
 
 class forecast_setting:
 
-    def __init__(self, units_LSTM = 20, units_dense = 20, patience = 5, shuffle = False, lag_value = 3, nb_epoch = 1, regularization_parameter = 0.001, batch_size_para = 32, repeat = 10, activation: str = 'tanh', dropout: bool = False, amount_layers = 1):
+    def __init__(self, units_LSTM = 20, layers_LSTM = 1, units_dense = 20, layers_dense = 1, patience = 5, shuffle = False, lag_value = 3, nb_epoch = 1, regularization_parameter = 0.001, batch_size_para = 32, repeat = 10, activation: str = 'tanh', learning_rate: float = 0.001, dropout: bool = False, amount_layers = 1):
         self.lag_value = lag_value
         self.nb_epoch = nb_epoch
         self.regularization_parameter = regularization_parameter
@@ -28,6 +28,9 @@ class forecast_setting:
         self.activation = activation
         self.patience = patience
         self.shuffle = shuffle
+        self.learning_rate = learning_rate
+        self.layers_LSTM = layers_LSTM
+        self.layers_dense = layers_dense
 
     # def set_evaluation:
 
@@ -114,11 +117,20 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
 
     history = History()
     regularizers.l2(l=setting.regularization_parameter)
+    optimizers.Adam(learning_rate=setting.learning_rate)
     model = Sequential()
     # no initial state is given --> hidden state are tensors filled with zeros
     # dropout=None,recurrent_dropout=None
-    model.add(LSTM(units=setting.units_LSTM,activation= setting.activation,batch_input_shape=(None,X.shape[1],X.shape[2]))) # no need to specify the batch size when stateless
-    model.add(Dense(units=setting.units_dense,activation='relu',kernel_regularizer='l2'))
+    if setting.layers_LSTM == 1:
+        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+    else:
+        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequence = True, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+        for _ in np.arange(1,setting.layers_LSTM-1):
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequence=True))
+        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation))
+
+    for _ in range(setting.layers_dense):
+        model.add(Dense(units=setting.units_dense,activation='relu',kernel_regularizer='l2'))
     # model.add(Dropout(0.10))
     model.add(Dense(units=y.shape[1],activation='relu',kernel_regularizer='l2'))
     model.compile(optimizer='adam',loss='mse')
@@ -135,7 +147,9 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
 def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True):
 
     history = History()
+    epoch_count = 0
     regularizers.l2(l=setting.regularization_parameter)
+    optimizers.Adam(learning_rate=setting.learning_rate)
     model = None
     weights = None
     loss = []
@@ -148,30 +162,43 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
             batch_size = 1
         model = Sequential()
         # dropout=None,recurrent_dropout=None
-        model.add(LSTM(units=setting.units_LSTM,stateful= True, activation= setting.activation,batch_input_shape=(batch_size,X.shape[1],X.shape[2])))
-        model.add(Dense(units=setting.units_dense,activation='relu',kernel_regularizer='l2'))
+        if setting.layers_LSTM == 1:
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_state= True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+        else:
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_state= True, return_sequence=True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
+            for _ in np.arange(1, setting.layers_LSTM - 1):
+                model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_state= True, return_sequence=True))
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_state= True))
+
+        for _ in range(setting.layers_dense):
+            model.add(Dense(units=setting.units_dense, activation='relu', kernel_regularizer='l2'))
         # model.add(Dropout(0.10))
-        model.add(Dense(units=y.shape[1],activation='relu',kernel_regularizer='l2'))
+        model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer='l2'))
         model.compile(optimizer='adam',loss='mse')
         early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
         if i == 0:
             for k in range(setting.nb_epoch):
                 model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+                epoch_count = k+1
+                print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
                 loss.append(history.history['loss'][0])
-                val_loss.append(history.history['val_loss'][0])
-                if len(tracking) == setting.patience + 1:
-                    break
-                if val_loss < tracking[0]:
-                    weigths = model.get_weights()
-                    tracking = [val_loss]
-                else:
-                    tracking.append(val_loss)
+                current_val_lost = history.history['val_loss'][0]
+                val_loss.append(current_val_lost)
 
+                if current_val_lost < tracking[0]:
+                    weights = model.get_weights()
+                    tracking = [current_val_lost]
+                else:
+                    tracking.append(current_val_lost)
+                    if len(tracking) == setting.patience + 1:
+                        break
                 if reset_after_epoch:
                     model.reset_states()
         else:
             # Now the batch size is changed to one
             model.set_weights(weights)
+    history.history['loss'] = loss
+    history.history['val_loss'] = val_loss
     # save the trained_model
     if save:
         file_path = "model.h5"
