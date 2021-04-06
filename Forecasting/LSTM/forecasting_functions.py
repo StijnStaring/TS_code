@@ -11,6 +11,8 @@ from keras.models import Sequential, save_model, load_model
 from keras import regularizers
 from keras.callbacks import EarlyStopping,ModelCheckpoint, History
 
+from Test_basemodel_functions import Switcher
+
 
 class forecast_setting:
 
@@ -130,12 +132,15 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
 
     return model,history
 
-def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False):
+def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True):
 
     history = History()
     regularizers.l2(l=setting.regularization_parameter)
     model = None
     weights = None
+    loss = []
+    val_loss = []
+    tracking = [np.inf]
     for i in range(2):
         if i == 0:
             batch_size = setting.batch_size_parameter
@@ -150,8 +155,20 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
         model.compile(optimizer='adam',loss='mse')
         early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
         if i == 0:
-            model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
-            weights = model.get_weights()
+            for k in range(setting.nb_epoch):
+                model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+                loss.append(history.history['loss'][0])
+                val_loss.append(history.history['val_loss'][0])
+                if len(tracking) == setting.patience + 1:
+                    break
+                if val_loss < tracking[0]:
+                    weigths = model.get_weights()
+                    tracking = [val_loss]
+                else:
+                    tracking.append(val_loss)
+
+                if reset_after_epoch:
+                    model.reset_states()
         else:
             # Now the batch size is changed to one
             model.set_weights(weights)
@@ -162,7 +179,67 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
 
     return model,history
 
+# for i in range(nb_epoch):
+# 		model.fit(X, y, epochs=1, batch_size=batch_size, verbose=0, shuffle=False)
+# 		model.reset_states()
+
 # model = load_model(filepath, compile = True)
+
+def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_norm: pd.Series, lag_value: int, daily_time_stamps: pd.DatetimeIndex):
+    if len(daily_time_stamps) != 48:
+            raise Exception("The test data doesn't equal 48 steps.")
+    TS_copy = TS_norm_full.copy(deep= True)
+    history_predictions = pd.Series(index= daily_time_stamps)
+    history_reference = pd.Series(index= daily_time_stamps)
+    for i in np.arange(0,len(daily_time_stamps)):
+        time_stamp = daily_time_stamps[i]
+        index_time_stamp = TS_copy.index.get_loc(time_stamp) # want to predict the time_stamp
+        start = index_time_stamp - lag_value
+        end = index_time_stamp
+        history = TS_copy[start:end+1]
+        prediction_input, reference = input_output_LSTM(history, temperature_norm, lag_value) # also the value to predict should be given
+        y_hat = model.predict(prediction_input, batch_size= 1)
+        # integrate the prediction in the TS_copy to be used in the next iterate
+        TS_copy[time_stamp] = y_hat
+        history_predictions[time_stamp] = y_hat
+        history_reference[time_stamp] = reference
+
+    if history_predictions.isnull().sum() + history_reference.isnull().sum() != 0:
+        raise Exception("Not all the values of the day are correct predicted!")
+    return history_predictions, history_reference
+
+def test_set_prediction(model: Sequential, setting: forecast_setting, serie: time_serie, test_set:pd.Series, X_train, X_val, real_values: bool = True, seeding: bool = True):
+    # assumption that the test set has no gaps in the dates is not valid
+    model.reset_states()
+    if seeding: # seeding only usefull when have a stateful model
+        total_training = np.vstack((X_train,X_val))
+        for i in np.arange(0,len(total_training)):
+            row = total_training[i:i+1,:,:]
+            model.predict(row,batch_size=1)
+
+    collection = list(get_all_days_of_year(test_set))
+    day_int = collection[0]
+    daily_time_stamps = test_set[test_set.index.dayofyear == day_int].index
+    (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
+    all_predictions = history_predictions
+    all_references = history_reference
+
+    if len(collection) > 1:
+        for day_int in collection[1:]:
+            daily_time_stamps = test_set[test_set.index.dayofyear == day_int].index
+            (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
+            all_predictions = all_predictions.append(history_predictions)
+            all_references = all_references.append(history_reference)
+
+    if real_values:
+        all_predictions = norm_inverse(all_predictions,serie.scaler_history)
+        all_references = norm_inverse(all_references,serie.scaler_history)
+
+    return all_predictions, all_references
+
+
+def get_performance(all_predictions: pd.Series, all_references: pd.Series, metric: str = 'NRMSE'):
+    return Switcher(metric, all_predictions, all_references)
 
 def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = False, dpi = 100):
 
@@ -241,8 +318,6 @@ def norm_inverse(serie: pd.Series, scaler):
     norm_serie = pd.Series(data=norm_serie,index=serie.index)
     return norm_serie
 
-
-
 def get_av_temp(time_stamp: pd.Timestamp,temperature: pd.Series)-> float:
     return temperature[temperature.index.dayofyear == time_stamp.dayofyear]
 
@@ -299,3 +374,27 @@ def input_output_LSTM(training, temperature_norm, lag_value: int):
 
 
     return X,y
+
+def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: bool):
+    axis = figure_layout(figsize=(10,8),titel="",xlabel="date",ylabel="kWh", dpi= 300)
+    labels = ["True Future", "Model Prediction"]
+
+    all_references.plot(ax=axis, lw= 3.0, grid= True)
+    all_predictions.plot(ax=axis, lw= 3.0, grid= True)
+    axis.legend(labels)
+
+    if save:
+        path = "Vanilla_LSTM_figures/"
+        fname = path + "ID" + ID + "_Day" + day_int + ".png"
+        plt.savefig(fname, dpi=None, facecolor='w', edgecolor='w', orientation='portrait', format=None,
+                    transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
+
+
+def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = True):
+    collection = get_all_days_of_year(all_predictions)
+    for day_int in collection:
+        predictions = all_predictions[all_predictions.index.dayofyear == day_int]
+        references = all_references[all_references.index.dayofyear == day_int]
+        show_forecast(predictions, references, ID, str(day_int), save)
+    plt.show()
+
