@@ -16,7 +16,9 @@ from Test_basemodel_functions import Switcher
 
 class forecast_setting:
 
-    def __init__(self, units_LSTM = 20, layers_LSTM = 1, units_dense = 20, layers_dense = 1, patience = 5, shuffle = False, lag_value = 3, nb_epoch = 1, regularization_parameter = 0.001, batch_size_para = 32, repeat = 10, activation: str = 'tanh', learning_rate: float = 0.001, dropout: bool = False, amount_layers = 1):
+    def __init__(self, units_LSTM = 20, layers_LSTM = 1, units_dense = 20, layers_dense = 1, patience = 5,
+                 shuffle = False, lag_value = 3, nb_epoch = 1, regularization_parameter = 0.001, batch_size_para = 32,
+                 repeat = 10, activation: str = 'tanh', learning_rate: float = 0.001, dropout_LSTM = 0.2, recurrent_dropout_LSTM = 0.2, dropout_dense = 0.2, kernel_regularizer = 0.001):
         self.lag_value = lag_value
         self.nb_epoch = nb_epoch
         self.regularization_parameter = regularization_parameter
@@ -31,6 +33,10 @@ class forecast_setting:
         self.learning_rate = learning_rate
         self.layers_LSTM = layers_LSTM
         self.layers_dense = layers_dense
+        self.dropout_LSTM = dropout_LSTM
+        self.recurrent_dropout_LSTM = recurrent_dropout_LSTM
+        self.dropout_dense = dropout_dense
+        self.kernel_regularizer = kernel_regularizer
 
     # def set_evaluation:
 
@@ -63,6 +69,7 @@ class time_serie:
         self.test = test
         self.training_true = training_true
         self.test_true = test_true
+
 
 def get_all_days_of_year(serie: pd.Series)->set:
     collection = set()
