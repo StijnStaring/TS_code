@@ -6,7 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 import warnings as wn
 wn.filterwarnings(action='ignore')
 from Test_basemodel_functions import EnglandAndWalesHolidayCalendar
-from keras.layers import Dense,  LSTM,Embedding
+from keras.layers import Dense,  LSTM, Dropout
 from keras.models import Sequential, save_model, load_model
 from keras import regularizers, optimizers
 from keras.callbacks import EarlyStopping,ModelCheckpoint, History
@@ -16,9 +16,12 @@ from Test_basemodel_functions import Switcher
 
 class forecast_setting:
 
-    def __init__(self, units_LSTM = 20, layers_LSTM = 1, units_dense = 20, layers_dense = 1, patience = 5,
+    def __init__(self, units_LSTM = 20, layers_LSTM = 1, units_dense = 20, layers_DENSE= 1, patience = 5,
                  shuffle = False, lag_value = 3, nb_epoch = 1, regularization_parameter = 0.001, batch_size_para = 32,
-                 repeat = 10, activation: str = 'tanh', learning_rate: float = 0.001, dropout_LSTM = 0.2, recurrent_dropout_LSTM = 0.2, dropout_dense = 0.2, kernel_regularizer = 0.001):
+                 repeat = 10, activation: str = 'tanh', learning_rate: float = 0.001, dropout_LSTM = 0, recurrent_dropout_LSTM = 0, kernel_regularizer_LSTM = None,
+                 recurrent_regularizer_LSTM = None, bais_regularizer_LSTM = None, activity_regularizer_LSTM = None, dropout_DENSE = 0,
+                 kernel_regularizer_DENSE = None, bais_regularizer_DENSE = None, activity_regularizer_DENSE = None):
+
         self.lag_value = lag_value
         self.nb_epoch = nb_epoch
         self.regularization_parameter = regularization_parameter
@@ -31,14 +34,44 @@ class forecast_setting:
         self.patience = patience
         self.shuffle = shuffle
         self.learning_rate = learning_rate
+
         self.layers_LSTM = layers_LSTM
-        self.layers_dense = layers_dense
+        self.layers_DENSE = layers_DENSE
+
         self.dropout_LSTM = dropout_LSTM
         self.recurrent_dropout_LSTM = recurrent_dropout_LSTM
-        self.dropout_dense = dropout_dense
-        self.kernel_regularizer = kernel_regularizer
+        if kernel_regularizer_LSTM is not None:
+            self.kernel_regularizer_LSTM = regularizers.l2(l= kernel_regularizer_LSTM)
+        else:
+            self.kernel_regularizer_LSTM = None
+        if recurrent_regularizer_LSTM is not None:
+            self.recurrent_regularizer_LSTM = regularizers.l2(l= recurrent_regularizer_LSTM)
+        else:
+            self.recurrent_regularizer_LSTM = None
+        if bais_regularizer_LSTM is not None:
+            self.bais_regularizer_LSTM = regularizers.l2(l= bais_regularizer_LSTM)
+        else:
+            self.bais_regularizer_LSTM = None
+        if activity_regularizer_LSTM is not None:
+            self.activity_regularizer_LSTM = regularizers.l2(l= activity_regularizer_LSTM)
+        else:
+            self.activity_regularizer_LSTM = None
 
-    # def set_evaluation:
+        self.dropout_DENSE = dropout_DENSE
+        if kernel_regularizer_DENSE is not None:
+            self.kernel_regularizer_DENSE = regularizers.l2(l= kernel_regularizer_DENSE)
+        else:
+            self.kernel_regularizer_DENSE = None
+        if bais_regularizer_DENSE is not None:
+            self.bais_regularizer_DENSE = regularizers.l2(l= bais_regularizer_DENSE)
+        else:
+            self.bais_regularizer_DENSE = None
+        if activity_regularizer_DENSE is not None:
+            self.activity_regularizer_DENSE = regularizers.l2(l= activity_regularizer_DENSE)
+        else:
+            self.activity_regularizer_DENSE = None
+
+            # def set_evaluation:
 
 
 class time_serie:
@@ -123,26 +156,25 @@ def generate_training_validation_division(data: np.ndarray, reference: np.array,
 def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False):
 
     history = History()
-    regularizers.l2(l=setting.regularization_parameter)
     optimizers.Adam(learning_rate=setting.learning_rate)
     model = Sequential()
     # no initial state is given --> hidden state are tensors filled with zeros
     # dropout=None,recurrent_dropout=None
     if setting.layers_LSTM == 1:
-        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM,batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
     else:
-        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
         for _ in np.arange(1,setting.layers_LSTM-1):
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences=True))
-        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation))
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
+        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
 
     for _ in range(setting.layers_dense):
-        model.add(Dense(units=setting.units_dense,activation='relu',kernel_regularizer='l2'))
-    # model.add(Dropout(0.10))
-    model.add(Dense(units=y.shape[1],activation='relu',kernel_regularizer='l2'))
+        model.add(Dropout(setting.dropout_DENSE))
+        model.add(Dense(units=setting.units_dense,activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
+    model.add(Dropout(setting.dropout_DENSE))
+    model.add(Dense(units=y.shape[1],activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
     model.compile(optimizer='adam',loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
-    # shuffle false --> not shuffle the training data
     model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
     # save the trained_model
     if save:
@@ -168,20 +200,21 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
         else:
             batch_size = 1
         model = Sequential()
-        # dropout=None,recurrent_dropout=None
+
         if setting.layers_LSTM == 1:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
         else:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
             for _ in np.arange(1, setting.layers_LSTM - 1):
 
-                model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True))
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True))
+                model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
 
         for _ in range(setting.layers_dense):
-            model.add(Dense(units=setting.units_dense, activation='relu', kernel_regularizer='l2'))
-        # model.add(Dropout(0.10))
-        model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer='l2'))
+            model.add(Dropout(setting.dropout_DENSE))
+            model.add(Dense(units=setting.units_dense, activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
+        model.add(Dropout(setting.dropout_DENSE))
+        model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
         model.compile(optimizer='adam',loss='mse')
         early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
         if i == 0:
@@ -214,9 +247,6 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
 
     return model,history
 
-# for i in range(nb_epoch):
-# 		model.fit(X, y, epochs=1, batch_size=batch_size, verbose=0, shuffle=False)
-# 		model.reset_states()
 
 # model = load_model(filepath, compile = True)
 
