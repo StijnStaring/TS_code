@@ -171,7 +171,7 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
         model.add(Dense(units=setting.units_DENSE,activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
     model.add(Dropout(setting.dropout_DENSE))
     model.add(Dense(units=y.shape[1],activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
-    model.compile(optimizer=optimizers.Adam(learning_rate=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
+    model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
     model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
     # save the trained_model
@@ -210,7 +210,7 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
             model.add(Dense(units=setting.units_DENSE, activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
         model.add(Dropout(setting.dropout_DENSE))
         model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer= setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
-        model.compile(optimizer=optimizers.Adam(learning_rate=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
+        model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
         early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
         if i == 0:
             for k in range(setting.nb_epoch):
