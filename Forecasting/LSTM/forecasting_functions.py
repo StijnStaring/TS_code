@@ -17,14 +17,13 @@ from Test_basemodel_functions import Switcher
 class forecast_setting:
 
     def __init__(self, units_LSTM = 20, layers_LSTM = 1, units_dense = 20, layers_DENSE= 1, patience = 5,
-                 shuffle = False, lag_value = 3, nb_epoch = 1, regularization_parameter = 0.001, batch_size_para = 32,
+                 shuffle = False, lag_value = 3, nb_epoch = 1, batch_size_para = 32,
                  repeat = 10, activation: str = 'tanh', learning_rate: float = 0.001, dropout_LSTM = 0, recurrent_dropout_LSTM = 0, kernel_regularizer_LSTM = None,
                  recurrent_regularizer_LSTM = None, bais_regularizer_LSTM = None, activity_regularizer_LSTM = None, dropout_DENSE = 0,
                  kernel_regularizer_DENSE = None, bais_regularizer_DENSE = None, activity_regularizer_DENSE = None):
 
         self.lag_value = lag_value
         self.nb_epoch = nb_epoch
-        self.regularization_parameter = regularization_parameter
         self.batch_size_parameter = batch_size_para
         self.units_LSTM = units_LSTM
         self.units_dense = units_dense
@@ -158,8 +157,9 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
     history = History()
     optimizers.Adam(learning_rate=setting.learning_rate)
     model = Sequential()
-    # no initial state is given --> hidden state are tensors filled with zeros
-    # dropout=None,recurrent_dropout=None
+    # no initial state is given --> hidden state and cell state are tensors filled with zeros
+    # weight matrix is and the 
+
     if setting.layers_LSTM == 1:
         model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM,batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
     else:
@@ -168,12 +168,12 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
             model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
         model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
 
-    for _ in range(setting.layers_dense):
+    for _ in range(setting.layers_DENSE):
         model.add(Dropout(setting.dropout_DENSE))
         model.add(Dense(units=setting.units_dense,activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
     model.add(Dropout(setting.dropout_DENSE))
     model.add(Dense(units=y.shape[1],activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
-    model.compile(optimizer='adam',loss='mse')
+    model.compile(optimizer=optimizers.Adam(learning_rate=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
     model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
     # save the trained_model
@@ -186,9 +186,6 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
 def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True):
 
     history = History()
-    epoch_count = 0
-    regularizers.l2(l=setting.regularization_parameter)
-    optimizers.Adam(learning_rate=setting.learning_rate)
     model = None
     weights = None
     loss = []
@@ -210,12 +207,12 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
                 model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
             model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
 
-        for _ in range(setting.layers_dense):
+        for _ in range(setting.layers_DENSE):
             model.add(Dropout(setting.dropout_DENSE))
             model.add(Dense(units=setting.units_dense, activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
         model.add(Dropout(setting.dropout_DENSE))
         model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
-        model.compile(optimizer='adam',loss='mse')
+        model.compile(optimizer=optimizers.Adam(learning_rate=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
         early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
         if i == 0:
             for k in range(setting.nb_epoch):
@@ -240,6 +237,7 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
             model.set_weights(weights)
     history.history['loss'] = loss
     history.history['val_loss'] = val_loss
+
     # save the trained_model
     if save:
         file_path = "model.h5"
