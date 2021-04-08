@@ -244,69 +244,6 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
     return model,history
 
 
-def build_model_stateful1_old(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True):
-
-    history = History()
-
-    model = None
-    weights = None
-    loss = []
-    val_loss = []
-    tracking = [np.inf]
-    for i in range(2):
-        if i == 0:
-            batch_size = setting.batch_size_parameter
-        else:
-            batch_size = 1
-        model = Sequential()
-        # dropout=None,recurrent_dropout=None
-        if setting.layers_LSTM == 1:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
-        else:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
-            for _ in np.arange(1, setting.layers_LSTM - 1):
-
-                model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True))
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True))
-
-        for _ in range(setting.layers_DENSE):
-            model.add(Dropout(setting.dropout_DENSE))
-            model.add(Dense(units=setting.units_DENSE, activation='relu', kernel_regularizer='l2',bias_regularizer=setting.bais_regularizer_DENSE,activity_regularizer=setting.activity_regularizer_DENSE))
-        model.add(Dropout(setting.dropout_DENSE))
-        model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer='l2',bias_regularizer=setting.bais_regularizer_DENSE,activity_regularizer=setting.activity_regularizer_DENSE))
-        model.compile(optimizer=optimizers.Adam(learning_rate=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
-        early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
-        if i == 0:
-            for k in range(setting.nb_epoch):
-                model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
-                epoch_count = k+1
-                print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
-                loss.append(history.history['loss'][0])
-                current_val_lost = history.history['val_loss'][0]
-                val_loss.append(current_val_lost)
-
-                if current_val_lost < tracking[0]:
-                    weights = model.get_weights()
-                    tracking = [current_val_lost]
-                else:
-                    tracking.append(current_val_lost)
-                    if len(tracking) == setting.patience + 1:
-                        break
-                if reset_after_epoch:
-                    model.reset_states()
-        else:
-            # Now the batch size is changed to one
-            model.set_weights(weights)
-    history.history['loss'] = loss
-    history.history['val_loss'] = val_loss
-    # save the trained_model
-    if save:
-        file_path = "model.h5"
-        save_model(model,file_path)
-
-    return model,history
-
-
 # model = load_model(filepath, compile = True)
 
 def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_norm: pd.Series, lag_value: int, daily_time_stamps: pd.DatetimeIndex):
@@ -510,7 +447,7 @@ def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: 
     if save:
         path = "Vanilla_LSTM_figures/"
         fname = path + "ID" + ID + "_Day" + day_int + ".png"
-        plt.savefig(fname, dpi=None, facecolor='w', edgecolor='w', orientation='portrait', format=None,
+        plt.savefig(fname, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None,
                     transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
 
 
