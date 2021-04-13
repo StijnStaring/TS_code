@@ -1,5 +1,7 @@
 # 06-run-pytorch-data.py
 from azureml.core import Workspace
+# 06-run-pytorch-data.py
+from azureml.core import Workspace
 from azureml.core import Experiment
 from azureml.core import Environment
 from azureml.core import ScriptRunConfig

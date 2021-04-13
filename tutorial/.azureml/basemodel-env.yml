@@ -1,0 +1,15 @@
+name: basemodel-env
+channels:
+    - defaults
+dependencies:
+    - python=3.8.8
+    - pandas
+    - numpy
+    - scipy
+    - matplotlib
+    - casadi
+    - pip
+    - sklearn-learn
+    - pip:
+        - azureml-sdk
+        - DateTime

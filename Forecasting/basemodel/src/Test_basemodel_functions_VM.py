@@ -1,6 +1,5 @@
 """
 Overview of the different basemodels.
-
 """
 import datetime as dt
 import pandas as pd # pandas
@@ -12,8 +11,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import casadi as ca
-# import warnings as wn
-# wn.filterwarnings(action='ignore')
+
 
 plt.rc('axes', linewidth=2)
 plt.rc('axes', labelsize= 16)
