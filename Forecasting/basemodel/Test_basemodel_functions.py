@@ -158,7 +158,7 @@ def histogram(training_serie: pd.Series):
     loads = loads[~np.isnan(loads)]
     n, bins = np.histogram(a=loads, bins='fd',density=False)
 
-    return n,bins
+    return n,bins,loads
 
 # need to select the time of the day and day type
 def MAPE_estimator(test_dates: pd.DatetimeIndex,serie: pd.Series):
@@ -196,8 +196,15 @@ def MAPE_optimization(training_days:pd.DatetimeIndex,serie:pd.Series,time_steps:
     for index in np.arange(0,time_steps):
         temp = training_30min[training_30min.hour == training_hours[index].hour]
         data = temp[temp.minute == training_hours[index].minute]
-        n,bins = histogram(serie[data])
+        n,bins,loads = histogram(serie[data])
         probability = n/sum(n)
+        ########################
+        # axis = figure_layout(figsize=(18, 12), titel= "Histogram", xlabel= "Consumption [kWh]", ylabel= "Counts [-]", grid=False)
+        # axis.hist(loads,bins=bins,rwidth=0.95)
+        # fname = "D:\Onedrive\Leuven\Final project\Results\Forecasting\histogram"+str(index)+".png"
+        # plt.savefig(fname, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None,
+        #             transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
+        ########################
         discretized_values = []
         for j in np.arange(0,len(bins)-1):
             if probability[j] != 0:
@@ -226,16 +233,8 @@ def MAPE_optimization(training_days:pd.DatetimeIndex,serie:pd.Series,time_steps:
         opti.set_initial(p,p_hat)
         opti.solver('ipopt')
         sol = opti.solve()
-        print(100*"#")
+        # print(100*"#")
         stock[index] = sol.value(p)
-
-        # for j in np.arange(0, len(discrete_values)):
-        #     pi = discrete_values[j]
-        #     ei = probability[j] * ((p - pi) / pi)
-        #     Li = opti.variable()
-        #     obj = obj + Li
-        #     opti.subject_to(opti.bounded(-Li, ei, Li))
-        # opti.minimize(obj)
 
     return stock
 

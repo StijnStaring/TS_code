@@ -2,7 +2,7 @@
 This file is testing the different base models.
 The test set used are the 31 days of December of the 261 time-series with measurements of the full year 2017.
 Forecasts are only included in the evaluation metrics when all the different models output a forecast
-different then nan.
+different than nan.
 
 Evaluation metrics used: MSE, RMSE, NRMSE, MAE, (MAPE is discarted because real values are sometimes zero)
 
@@ -15,16 +15,26 @@ model 5. Empirical mape minimization
 """
 from Test_basemodel_functions import *
 
+Stijn = True
+path_history:str
+path_temperature:str
+save_to:str
+if Stijn:
+    path_history = "./data/DF_three_series.csv"
+    path_temperature = "./data/DF_three_temp_series.csv"
+    save_to = "D:\Onedrive\Leuven\Final project\Results\Forecasting\Base_model_figures"
+else:
+    path_history = ""
+    path_temperature = ""
+    save_to = ""
+fullYeardata = pd.read_csv(path_history,index_col= "date",parse_dates= True)
+av_temperature = pd.read_csv(path_temperature,index_col="meter_id",parse_dates=True)
 
-fullYeardata = pd.read_csv("D:\Onedrive\Leuven\Final project\data\Forecasting_writtendata\FullYear.csv",index_col= "date",parse_dates= True)
-av_temperature = pd.read_csv("D:\Onedrive\Leuven\Final project\data\weather-avg.csv",index_col='meter_id')
-av_temperature = av_temperature.transpose()
-av_temperature.index = pd.to_datetime(av_temperature.index)
 
 vertical_stack = pd.DataFrame()
 counter = 0
 total_count = len(fullYeardata.columns)
-for col_name in fullYeardata.columns[30:31]:
+for col_name in fullYeardata.columns:
     TS = fullYeardata[col_name]
     TS_temperature = av_temperature[col_name]
     TS_december = TS[TS.index.month == 12]
@@ -56,26 +66,27 @@ for col_name in fullYeardata.columns[30:31]:
     print("%s of %s time-series are trained.\n"%(counter,total_count))
 
 
-# Evaluate the different methods:
-vertical_stack.dropna(inplace=True)
-real_values = vertical_stack['real_values']
-for method in ["MSE","RMSE","NRMSE","MAE"]:
-    outputs = dict()
-    for col_name in vertical_stack.columns[:-1]: # expects the real values at the end of the DataFrame
-        forecast = vertical_stack[col_name]
-        output:float = Switcher(method,forecast,real_values)
-        outputs[col_name] = output
+    # Evaluate the different methods:
+    vertical_stack.dropna(inplace=True,axis=0)
+    real_values = vertical_stack['real_values']
+    for method in ["MSE","RMSE","NRMSE","MAE"]:
+        outputs = dict()
+        for col_name2 in vertical_stack.columns[:-1]: # expects the real values at the end of the DataFrame
+            forecast = vertical_stack[col_name2]
+            output:float = Switcher(method,forecast,real_values)
+            outputs[col_name2] = output
 
-    titels = list(outputs.keys())
-    values = list(outputs.values())
-    plt.figure(method)
-    axis = figure_layout(figsize=(18, 12), titel=method, grid=False)
-    # axis.grid(axis='x')
-    rects = axis.bar(titels, values, color='maroon', width=0.4)
-    autolabel(rects, axis)
+        titels = list(outputs.keys())
+        values = list(outputs.values())
+        # plt.figure(method)
+        axis = figure_layout(figsize=(18, 12), titel=method, grid=False)
+        # axis.grid(axis='x')
+        rects = axis.bar(titels, values, color='maroon', width=0.4)
+        autolabel(rects, axis)
 
-    fname = "basemodel_figures/" + method + "_basemodel.png"
-    plt.savefig(fname, dpi=None, facecolor='w', edgecolor='w', orientation='portrait', format=None,
-                transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
+        fname = save_to + "Serie"+str(col_name) + "_" + method + "_basemodel.png"
+        plt.savefig(fname, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None,
+                    transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
 
-plt.close("all")
+print(100*"#")
+print("All the series are trained and evaluated!")
