@@ -64,11 +64,11 @@ if __name__ == "__main__":
         forecast5 = MAPE_estimator(TS_december.index,TS)
         real_values = TS_december
 
-        run = show_all_forecasts(forecast1,real_values,col_name,run,"similar")
-        run = show_all_forecasts(forecast2, real_values, col_name, run,"1ago")
-        run = show_all_forecasts(forecast3, real_values, col_name, run, "7ago")
-        run = show_all_forecasts(forecast4, real_values, col_name, run,"mean")
-        run = show_all_forecasts(forecast5, real_values, col_name, run,"MAPE")
+        # run = show_all_forecasts(forecast1,real_values,col_name,run,"similar")
+        # run = show_all_forecasts(forecast2, real_values, col_name, run,"1ago")
+        # run = show_all_forecasts(forecast3, real_values, col_name, run, "7ago")
+        # run = show_all_forecasts(forecast4, real_values, col_name, run,"mean")
+        # run = show_all_forecasts(forecast5, real_values, col_name, run,"MAPE")
 
         # uploading the csv files
         data = {forecast1.name: forecast1,
@@ -84,6 +84,7 @@ if __name__ == "__main__":
         CSV.to_csv("./csv_files/ID" + str(col_name) + ".csv")
         run.upload_file("./csv_files/ID" + str(col_name) + ".csv", "./csv_files/ID" + str(col_name) + ".csv")
 
+        # preparing for evaluation
         forecast1 = forecast1.reset_index(drop=True)
         forecast2 = forecast2.reset_index(drop=True)
         forecast3 = forecast3.reset_index(drop=True)
