@@ -51,8 +51,10 @@ if __name__ == "__main__":
     print("Running is started...")
     counter = 0
     total_count = len(fullYeardata.columns)
+    vertical_stack = pd.DataFrame()
+
     for col_name in fullYeardata.columns:
-        vertical_stack = pd.DataFrame()
+
         TS = fullYeardata[col_name]
         TS_temperature = av_temperature[col_name]
         TS_december = TS[TS.index.month == 12]
@@ -63,26 +65,6 @@ if __name__ == "__main__":
         forecast4 = mean_forecast(TS_december.index,TS)
         forecast5 = MAPE_estimator(TS_december.index,TS)
         real_values = TS_december
-
-        # run = show_all_forecasts(forecast1,real_values,col_name,run,"similar")
-        # run = show_all_forecasts(forecast2, real_values, col_name, run,"1ago")
-        # run = show_all_forecasts(forecast3, real_values, col_name, run, "7ago")
-        # run = show_all_forecasts(forecast4, real_values, col_name, run,"mean")
-        # run = show_all_forecasts(forecast5, real_values, col_name, run,"MAPE")
-
-        # uploading the csv files
-        data = {forecast1.name: forecast1,
-                forecast2.name: forecast2,
-                forecast3.name: forecast3,
-                forecast4.name: forecast4,
-                forecast5.name: forecast5,
-                "real_values": real_values}
-
-        CSV = pd.concat(data,axis=1)
-
-        makedirs("./csv_files", exist_ok=True)
-        CSV.to_csv("./csv_files/ID" + str(col_name) + ".csv")
-        run.upload_file("./csv_files/ID" + str(col_name) + ".csv", "./csv_files/ID" + str(col_name) + ".csv")
 
         # preparing for evaluation
         forecast1 = forecast1.reset_index(drop=True)
@@ -102,30 +84,31 @@ if __name__ == "__main__":
 
 
         vertical_stack = pd.concat([vertical_stack, df], axis=0, ignore_index=True)
-
-        # Evaluate the different methods:
-        vertical_stack.dropna(inplace=True,axis=0)
-        real_values = vertical_stack['real_values']
-        print("The amount of predicted values: %s." % len(real_values))
-        print("The amount of predicted days: %s."%(len(real_values)/48))
-
-        for method in ["MSE","RMSE","NRMSE","MAE"]:
-            outputs = dict()
-            for col_name2 in vertical_stack.columns[:-1]: # expects the real values at the end of the DataFrame
-                forecast = vertical_stack[col_name2]
-                output:float = Switcher(method,forecast,real_values)
-                outputs[col_name2] = output
-
-            titels = list(outputs.keys())
-            values = list(outputs.values())
-            axis,fig = figure_layout_VM(figsize=(18, 12), titel=method, grid=False)
-            rects = axis.bar(titels, values, color='maroon', width=0.4)
-            autolabel(rects, axis)
-            makedirs("./barplots",exist_ok=True)
-            run.log_image(name="./barplots/Serie"+str(col_name) + "_" + method + "_basemodel.png",plot=fig, description="barplot performance")
-
         counter += 1
         print("%s of %s time-series are trained.\n" % (counter, total_count))
+
+    # Evaluate the different methods:
+    vertical_stack.dropna(inplace=True,axis=0)
+    real_values = vertical_stack['real_values']
+    print("The amount of predicted values: %s." % len(real_values))
+    print("The amount of predicted days: %s."%(len(real_values)/48))
+
+    for method in ["MSE","RMSE","NRMSE","MAE"]:
+        outputs = dict()
+        for col_name2 in vertical_stack.columns[:-1]: # expects the real values at the end of the DataFrame
+            forecast = vertical_stack[col_name2]
+            output:float = Switcher(method,forecast,real_values)
+            outputs[col_name2] = output
+
+        titels = list(outputs.keys())
+        values = list(outputs.values())
+        axis,fig = figure_layout_VM(figsize=(18, 12), titel=method, grid=False)
+        rects = axis.bar(titels, values, color='maroon', width=0.4)
+        autolabel(rects, axis)
+        makedirs("./barplots",exist_ok=True)
+        run.log_image(name="./barplots/Serie"+str(col_name) + "_" + method + "_basemodel.png",plot=fig, description="barplot performance")
+
+
 
     print(100*"#")
     print("All the series are trained and evaluated!")
