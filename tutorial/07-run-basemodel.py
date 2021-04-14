@@ -26,7 +26,7 @@ if __name__ == "__main__":
         file_path='./.azureml/basemodel-env.yml'
     )
     config.run_config.environment = env
-
+    # the first time that the run is submitted -> env is automatically registered in Azure
     run = experiment.submit(config)
     run.tag("Description", "Compute the performance of the base models.")
     aml_url = run.get_portal_url()
@@ -35,15 +35,20 @@ if __name__ == "__main__":
     print(aml_url)
     print(50*"*")
     run.wait_for_completion(show_output=True)
+
     metrics = run.get_metrics()
+    vertical_stacked = metrics["Vertical stacked table"]
 
     # downloading the files
     import os
+    experiment_name = experiment.name
     project_folder = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel"
     outputs_path = os.path.join(project_folder, "outputs")
     os.makedirs(outputs_path, exist_ok=True)
+    experiment_specific_path = os.path.join(outputs_path,experiment_name)
 
     for filename in run.get_file_names():
+        print("filename: %s."%filename)
         if filename.startswith('outputs'):
             print("Downloading " + filename)
-            run.download_file(filename, output_file_path=outputs_path)
+            run.download_file(filename, output_file_path=experiment_specific_path)
