@@ -1,15 +1,16 @@
 name: basemodel-env
 channels:
     - defaults
+    - scikit-learn
 dependencies:
     - python=3.8.8
     - pandas
     - numpy
     - scipy
     - matplotlib
-    - casadi
     - pip
-    - sklearn-learn
+    - scikit-learn
     - pip:
         - azureml-sdk
         - DateTime
+        - casadi

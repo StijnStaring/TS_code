@@ -39,6 +39,26 @@ def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,
 
     return ax1
 
+def figure_layout_VM(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = False,
+                     dpi = 300):
+
+    plt.figure(figsize=figsize,dpi=dpi)
+    fig = plt.gcf()
+    ax1 = plt.gca()
+    plt.rc('legend',fontsize=fontsize_legend)
+    plt.title(titel, fontsize=fontsize_titel, fontweight = 'bold')
+    plt.grid(grid)
+    plt.xlabel(xlabel, fontsize=fontsize_axis)
+    plt.ylabel(ylabel, fontsize=fontsize_axis)
+    for tick in ax1.xaxis.get_major_ticks():
+            tick.label1.set_fontsize(fontsize_ticks)
+    #         tick.label1.set_fontweight('bold')
+    for tick in ax1.yaxis.get_major_ticks():
+        tick.label1.set_fontsize(fontsize_ticks)
+    #     tick.label1.set_fontweight('bold')
+
+    return ax1,fig
+
 # The model will not always produce an output --> can be that the previous day is not known
 def base_model_week_before(test_dates: pd.DatetimeIndex,serie: pd.Series,amount_days:int = 7):
     base_forecast = pd.Series(index= test_dates,name= 'base_forecast: ' + str(amount_days) + ' day(s)')
@@ -158,6 +178,16 @@ def histogram(training_serie: pd.Series):
 
     return n,bins,loads
 
+from os import devnull
+from sys import __stdout__,stdout
+# Disable
+def blockPrint():
+    stdout = open(devnull, 'w')
+
+# Restore
+def enablePrint():
+    stdout = __stdout__
+
 # need to select the time of the day and day type
 def MAPE_estimator(test_dates: pd.DatetimeIndex,serie: pd.Series):
     # The assumption is made that the test_dates are one continuous sequence of days
@@ -230,8 +260,9 @@ def MAPE_optimization(training_days:pd.DatetimeIndex,serie:pd.Series,time_steps:
         opti.subject_to(p>=0)
         opti.set_initial(p,p_hat)
         opti.solver('ipopt')
+        blockPrint()
         sol = opti.solve()
-        # print(100*"#")
+        enablePrint()
         stock[index] = sol.value(p)
 
     return stock
