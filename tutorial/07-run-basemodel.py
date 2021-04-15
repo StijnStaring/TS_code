@@ -8,7 +8,7 @@ from azureml.core import Dataset
 if __name__ == "__main__":
     ws = Workspace.from_config()
     datastore = ws.get_default_datastore()
-    dataset = Dataset.File.from_files(path=(datastore, 'datasets/three_series'))
+    dataset = Dataset.File.from_files(path=(datastore, 'datasets/all_series'))
 
     experiment = Experiment(workspace=ws, name='Run1_base_models_three')
 
@@ -39,13 +39,13 @@ if __name__ == "__main__":
     # metrics = run.get_metrics() # no metrics are assigned!
 
     # downloading the files
-    import os
-    project_folder = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel"
-    outputs_path = os.path.join(project_folder, "outputs")
-    os.makedirs(outputs_path, exist_ok=True)
-
-    for filename in run.get_file_names():
-        print("filename: %s."%filename)
-        if filename.startswith('csv_files'):
-            print("Downloading " + filename)
-            run.download_file(filename, output_file_path=outputs_path)
+    # import os
+    # project_folder = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel"
+    # outputs_path = os.path.join(project_folder, "outputs")
+    # os.makedirs(outputs_path, exist_ok=True)
+    #
+    # for filename in run.get_file_names():
+    #     print("filename: %s."%filename)
+    #     if filename.startswith('csv_files'):
+    #         print("Downloading " + filename)
+    #         run.download_file(filename, output_file_path=outputs_path)
