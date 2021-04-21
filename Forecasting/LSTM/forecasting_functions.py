@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import warnings as wn
 wn.filterwarnings(action='ignore')
-from Test_basemodel_functions import EnglandAndWalesHolidayCalendar
+from local_pc.Test_basemodel_functions import EnglandAndWalesHolidayCalendar
 from keras.layers import Dense,  LSTM, Dropout, Flatten
-from keras.models import Sequential, save_model, load_model
+from keras.models import Sequential, save_model
 from keras import regularizers, optimizers
-from keras.callbacks import EarlyStopping,ModelCheckpoint, History
+from keras.callbacks import EarlyStopping, History
 
-from Test_basemodel_functions import Switcher
+from local_pc.Test_basemodel_functions import Switcher
 
 
 class forecast_setting:
@@ -22,20 +22,9 @@ class forecast_setting:
                  recurrent_regularizer_LSTM = None, bais_regularizer_LSTM = None, activity_regularizer_LSTM = None, dropout_DENSE = 0,
                  kernel_regularizer_DENSE = None, bais_regularizer_DENSE = None, activity_regularizer_DENSE = None):
 
-        self.lag_value = lag_value
-        self.nb_epoch = nb_epoch
-        self.batch_size_parameter = batch_size_para
         self.units_LSTM = units_LSTM
-        self.units_DENSE = units_DENSE
-        self.repeat = repeat
-        self.evaluation_frame = pd.DataFrame()
-        self.activation = activation
-        self.patience = patience
-        self.shuffle = shuffle
-        self.learning_rate = learning_rate
 
         self.layers_LSTM = layers_LSTM
-        self.layers_DENSE = layers_DENSE
 
         self.dropout_LSTM = dropout_LSTM
         self.recurrent_dropout_LSTM = recurrent_dropout_LSTM
@@ -56,6 +45,10 @@ class forecast_setting:
         else:
             self.activity_regularizer_LSTM = None
 
+        self.units_DENSE = units_DENSE
+
+        self.layers_DENSE = layers_DENSE
+
         self.dropout_DENSE = dropout_DENSE
         if kernel_regularizer_DENSE is not None:
             self.kernel_regularizer_DENSE = regularizers.l2(l= kernel_regularizer_DENSE)
@@ -70,8 +63,18 @@ class forecast_setting:
         else:
             self.activity_regularizer_DENSE = None
 
-    def __str__(self):
-        print([])
+        self.lag_value = lag_value
+        self.nb_epoch = nb_epoch
+        self.activation = activation
+        self.batch_size_parameter = batch_size_para
+        self.learning_rate = learning_rate
+        self.patience = patience
+        self.shuffle = shuffle
+        self.repeat = repeat
+
+
+
+
 
 
 class time_serie:
@@ -153,7 +156,9 @@ def generate_training_validation_division(data: np.ndarray, reference: np.array,
 
 
 def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False):
-
+    """
+    The model uses the output of the LSTM layer as input to a dense layer.
+    """
     history = History()
     model = Sequential()
     # no initial state is given --> hidden state and cell state are tensors filled with zeros
@@ -189,12 +194,9 @@ def build_model_stateless2(setting: forecast_setting, X, y, X_val, y_val, verbos
     history = History()
     model = Sequential()
 
-    if setting.layers_LSTM == 1:
-        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM,batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
-    else:
-        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
-        for _ in np.arange(1,setting.layers_LSTM):
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
+    model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(None, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+    for _ in np.arange(1,setting.layers_LSTM):
+        model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, return_sequences = True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
 
     model.add(Flatten()) # Make from the matrix coming from the the LSTM a single vector
 
@@ -308,7 +310,7 @@ def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_nor
         raise Exception("Not all the values of the day are correct predicted!")
     return history_predictions, history_reference
 
-def test_set_prediction(model: Sequential, setting: forecast_setting, serie: time_serie, test_set:pd.Series, X_train, X_val, real_values: bool = True, seeding: bool = True):
+def test_set_prediction(model: Sequential, setting: forecast_setting, serie: time_serie, test_set:pd.Series, X_train, X_val, real_values: bool = True, seeding: bool = False):
     # assumption that the test set has no gaps in the dates is not valid
     model.reset_states()
     if seeding: # seeding only usefull when have a stateful model
@@ -341,7 +343,8 @@ def test_set_prediction(model: Sequential, setting: forecast_setting, serie: tim
 def get_performance(all_predictions: pd.Series, all_references: pd.Series, metric: str = 'NRMSE'):
     return Switcher(metric, all_predictions, all_references)
 
-def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = False, dpi = 100):
+plt.rc('axes', linewidth=2)
+def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=22,fontsize_axis=22,fontsize_legend=22,fontsize_ticks=20,grid:bool = False, dpi = 100):
 
     plt.figure(figsize=figsize, dpi= dpi)
     ax1 = plt.gca()
@@ -352,10 +355,8 @@ def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,
     plt.ylabel(ylabel, fontsize=fontsize_axis)
     for tick in ax1.xaxis.get_major_ticks():
             tick.label1.set_fontsize(fontsize_ticks)
-    #         tick.label1.set_fontweight('bold')
     for tick in ax1.yaxis.get_major_ticks():
         tick.label1.set_fontsize(fontsize_ticks)
-    #     tick.label1.set_fontweight('bold')
 
     return ax1
 

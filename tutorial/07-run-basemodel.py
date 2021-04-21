@@ -8,7 +8,7 @@ from azureml.core import Dataset
 if __name__ == "__main__":
     ws = Workspace.from_config()
     datastore = ws.get_default_datastore()
-    dataset = Dataset.File.from_files(path=(datastore, 'datasets/all_series'))
+    dataset = Dataset.File.from_files(path=(datastore, 'datasets/three_series'))
 
     experiment = Experiment(workspace=ws, name='Run1_base_models_three')
 

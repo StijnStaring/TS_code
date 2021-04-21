@@ -20,8 +20,8 @@ path_history:str
 path_temperature:str
 save_to:str
 if Stijn:
-    path_history = "./data/DF_three_series.csv"
-    path_temperature = "./data/DF_three_temp_series.csv"
+    path_history = "../data/DF_three_series.csv"
+    path_temperature = "../data/DF_three_temp_series.csv"
     save_to = "D:\Onedrive\Leuven\Final project\Results\Forecasting\Base_model_figures"
 else:
     path_history = ""
