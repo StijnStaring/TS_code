@@ -1,0 +1,16 @@
+Running the similation on a PC with 4 cores...
+##################################################
+The calculation of the LSTM inputs is started for serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
+--------------------------------------------------
+X shapes: [(5, 5, 5), (5, 5, 5), (5, 5, 5)].
+y shapes: [(5, 1), (5, 1), (5, 1)].
+##################################################
+The calculation of the LSTM inputs is started for serie: 0x1e84e4d5cf1f463147f3e4d566167597423d7769.
+--------------------------------------------------
+X shapes: [(5, 5, 5), (5, 5, 5), (5, 5, 5)].
+y shapes: [(5, 1), (5, 1), (5, 1)].
+##################################################
+The calculation of the LSTM inputs is started for serie: 0xc3b2f61a72e188cfd44483fce1bc11d6a628766d.
+--------------------------------------------------
+X shapes: [(5, 5, 5), (5, 5, 5), (5, 5, 5)].
+y shapes: [(5, 1), (5, 1), (5, 1)].

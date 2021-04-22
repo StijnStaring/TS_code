@@ -50,6 +50,7 @@ class forecast_setting:
         self.layers_DENSE = layers_DENSE
 
         self.dropout_DENSE = dropout_DENSE
+
         if kernel_regularizer_DENSE is not None:
             self.kernel_regularizer_DENSE = regularizers.l2(l= kernel_regularizer_DENSE)
         else:
@@ -378,7 +379,7 @@ def substitute_missing_values(TS: pd.Series):
                 temp = TS[TS.index.hour == date.hour]
                 data = temp[temp.index.minute == date.minute]
                 TS[date] = data.mean()
-    print("amount of missing values: %s. \n"%TS.isnull().sum())
+    # print("amount of missing values: %s. \n"%TS.isnull().sum())
     return TS
 
 def substitute_missing_values_temperature(TS: pd.Series):
@@ -395,7 +396,7 @@ def substitute_missing_values_temperature(TS: pd.Series):
 
             else:
                 TS[date] = TS.mean()
-    print("amount of missing values: %s. \n" % TS.isnull().sum())
+    # print("amount of missing values: %s. \n" % TS.isnull().sum())
     return TS
 
 def norm_forcast(serie: pd.Series):
