@@ -127,29 +127,46 @@ if __name__ == "__main__":
 
         # doing parameter search
         setting_identification = 1
+        dropout_LSTM = chosen_parameters.list_dropout_LSTM[0]
+        recurrent_dropout_LSTM = chosen_parameters.list_recurrent_dropout_LSTM[0]
+        kernel_regularization_LSTM = chosen_parameters.list_kernel_regularization_LSTM[0]
+        recurrent_regularization_LSTM  = chosen_parameters.list_recurrent_regularization_LSTM[0]
+        bais_regularization_LSTM = chosen_parameters.list_bais_regularization_LSTM[0]
+        activity_regularization_LSTM = chosen_parameters.list_activity_regularization_LSTM[0]
+
+        dropout_DENSE = chosen_parameters.list_dropout_DENSE[0]
+        kernel_regularization_DENSE = chosen_parameters.list_kernel_regularization_DENSE[0]
+        bais_regularization_DENSE = chosen_parameters.list_bais_regularization_DENSE[0]
+        activity_regularization_DENSE = chosen_parameters.list_activity_regularization_DENSE[0]
+
+        nb_epoch = chosen_parameters.list_nb_epoch[0]
+        activation = chosen_parameters.list_activation[0]
+        patience = chosen_parameters.list_patience[0]
+        shuffle = chosen_parameters.list_shuffle[0]
+
         for units_LSTM in chosen_parameters.list_units_LSTM:
             for layers_LSTM in chosen_parameters.list_layers_LSTM:
-                for dropout_LSTM in chosen_parameters.list_dropout_LSTM:
-                    for recurrent_dropout_LSTM in chosen_parameters.list_recurrent_dropout_LSTM:
-                        for kernel_regularization_LSTM in chosen_parameters.list_kernel_regularization_LSTM:
-                            for recurrent_regularization_LSTM in chosen_parameters.list_recurrent_regularization_LSTM:
-                                for bais_regularization_LSTM in chosen_parameters.list_bais_regularization_LSTM:
-                                    for activity_regularization_LSTM in chosen_parameters.list_activity_regularization_LSTM:
+                # for dropout_LSTM in chosen_parameters.list_dropout_LSTM:
+                #     for recurrent_dropout_LSTM in chosen_parameters.list_recurrent_dropout_LSTM:
+                #         for kernel_regularization_LSTM in chosen_parameters.list_kernel_regularization_LSTM:
+                #             for recurrent_regularization_LSTM in chosen_parameters.list_recurrent_regularization_LSTM:
+                #                 for bais_regularization_LSTM in chosen_parameters.list_bais_regularization_LSTM:
+                #                     for activity_regularization_LSTM in chosen_parameters.list_activity_regularization_LSTM:
 
                                         for units_DENSE in chosen_parameters.list_units_DENSE:
                                             for layers_DENSE in chosen_parameters.list_layers_DENSE:
-                                                for dropout_DENSE in chosen_parameters.list_dropout_DENSE:
-                                                    for kernel_regularization_DENSE in chosen_parameters.list_kernel_regularization_DENSE:
-                                                        for bais_regularization_DENSE in chosen_parameters.list_bais_regularization_DENSE:
-                                                            for activity_regularization_DENSE in chosen_parameters.list_activity_regularization_DENSE:
+                                                # for dropout_DENSE in chosen_parameters.list_dropout_DENSE:
+                                                #     for kernel_regularization_DENSE in chosen_parameters.list_kernel_regularization_DENSE:
+                                                #         for bais_regularization_DENSE in chosen_parameters.list_bais_regularization_DENSE:
+                                                #             for activity_regularization_DENSE in chosen_parameters.list_activity_regularization_DENSE:
 
                                                                 for lag_value in chosen_parameters.list_lag_value:
-                                                                    for nb_epoch in chosen_parameters.list_nb_epoch:
-                                                                        for activation in chosen_parameters.list_activation:
+                                                                    # for nb_epoch in chosen_parameters.list_nb_epoch:
+                                                                    #     for activation in chosen_parameters.list_activation:
                                                                             for batch_size_parameter in chosen_parameters.list_batch_size_parameter:
                                                                                 for learning_rate in chosen_parameters.list_learning_rate:
-                                                                                    for patience in chosen_parameters.list_patience:
-                                                                                        for shuffle in chosen_parameters.list_shuffle:
+                                                                                    # for patience in chosen_parameters.list_patience:
+                                                                                    #     for shuffle in chosen_parameters.list_shuffle:
                                                                                             repeat = chosen_parameters.list_repeat[0]
                                                                                             runner = forecast_setting(units_LSTM = units_LSTM, layers_LSTM = layers_LSTM, units_DENSE = units_DENSE, layers_DENSE= layers_DENSE, patience = patience,
                                                                                             shuffle = shuffle, lag_value = lag_value, nb_epoch = nb_epoch, batch_size_para = batch_size_parameter,
