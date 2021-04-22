@@ -73,7 +73,8 @@ class forecast_setting:
         self.shuffle = shuffle
         self.repeat = repeat
 
-
+    def __str__(self):
+        print(vars(self))
 
 
 
