@@ -10,7 +10,8 @@ from keras.layers import Dense,  LSTM, Dropout, Flatten
 from keras.models import Sequential, save_model
 from keras import regularizers, optimizers
 from keras.callbacks import EarlyStopping, History
-
+from tensorflow.compat.v1 import get_default_graph
+from tensorflow import Graph
 from local_pc.Test_basemodel_functions import Switcher
 
 
@@ -163,6 +164,7 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
     """
     history = History()
     model = Sequential()
+
     # no initial state is given --> hidden state and cell state are tensors filled with zeros
 
     if setting.layers_LSTM == 1:
