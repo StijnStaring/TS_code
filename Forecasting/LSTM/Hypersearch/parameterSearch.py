@@ -5,7 +5,7 @@ from functools import reduce
 import os
 import warnings as wn
 wn.filterwarnings(action='ignore')
-from keras.backend import clear_session
+from keras.backend import clear_session, reset_uids
 # from tensorflow import get_default_graph
 from tensorflow.compat.v1 import get_default_graph
 # parameters that are tried
@@ -32,9 +32,9 @@ class ParameterSearch:
         self.list_nb_epoch = [1000]
         self.list_activation = ['relu']
         self.list_batch_size_parameter = [1]
-        self.list_learning_rate = [10**-3,10**-2]
+        self.list_learning_rate = [10**-3,10**-2,10**-1]
         self.list_patience = [5]
-        self.list_shuffle = ['False']
+        self.list_shuffle = ['True']
         self.list_repeat = [4] #four is chosen because have four cores
 
 def create_validation_stateless(kwargs,ratio = 0.9):
@@ -60,13 +60,14 @@ def run_parameter_setting(kwargs):
     all_predictions: pd.Series
     all_references: pd.Series
     print("Model 1 running...")
-    trained_model1, history1, graph1 = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["X_val"], kwargs["y_val"], kwargs["verbose_para"], kwargs["save"])
+    # clear_session()
+    trained_model1, history1 = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["X_val"], kwargs["y_val"], kwargs["verbose_para"], kwargs["save"])
     # remember that you have to set the test to the real test values!
-    print("Model 1 training_finished...")
+
+    # with graph1.as_default():
+    all_predictions, all_references = test_set_prediction(trained_model1, kwargs["setting"], kwargs["ts"], kwargs["ts"].test, kwargs["X"], kwargs["X_val"], True, False)
     # clear_session()
-    with graph1.as_default():
-        all_predictions, all_references = test_set_prediction(trained_model1, kwargs["setting"], kwargs["ts"], kwargs["ts"].test, kwargs["X"], kwargs["X_val"], True, False)
-    # clear_session()
+    print("Model 1 prediction finished...")
     outputs_model1 = dict()
     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
         output: float = Switcher(method, all_predictions, all_references)
@@ -76,8 +77,8 @@ def run_parameter_setting(kwargs):
     # trained_model2, history2, graph2 = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["X_val"], kwargs["y_val"], kwargs["verbose_para"], kwargs["save"])
     # print("Model 2 training_finished...")
     # # clear_session()
-    # with graph2.as_default():
-    #     all_predictions, all_references = test_set_prediction(trained_model2, kwargs["setting"], kwargs["ts"], kwargs["ts"].test, kwargs["X"], kwargs["X_val"], True, False)
+    #
+    # all_predictions, all_references = test_set_prediction(trained_model2, kwargs["setting"], kwargs["ts"], kwargs["ts"].test, kwargs["X"], kwargs["X_val"], True, False)
     # # clear_session()
     # outputs_model2 = dict()
     # for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
@@ -166,6 +167,8 @@ if __name__ == "__main__":
                             for batch_size_parameter in chosen_parameters.list_batch_size_parameter:
                                 for learning_rate in chosen_parameters.list_learning_rate:
 
+                                    clear_session()
+                                    reset_uids()
                                     repeat = chosen_parameters.list_repeat[0]
                                     runner = forecast_setting(units_LSTM = units_LSTM, layers_LSTM = layers_LSTM, units_DENSE = units_DENSE, layers_DENSE= layers_DENSE, patience = patience,
                                     shuffle = shuffle, lag_value = lag_value, nb_epoch = nb_epoch, batch_size_para = batch_size_parameter,
@@ -176,13 +179,18 @@ if __name__ == "__main__":
                                     (X_train,y_train,X_val,y_val) = lag_dict.get(lag_value)
                                     p = Pool(processes=cpu_count())
                                     training_results = p.map(run_parameter_setting, [{"setting": runner,"ts":ts, "X": X_train, "y": y_train, "X_val":X_val, "y_val":y_val, "verbose_para":0, "save": False} for iteration in range(repeat)])
-                                    which_model = ["model1_sl", "model2_sl"]
+                                    clear_session()
+                                    # which_model = ["model1_sl", "model2_sl"]
+                                    which_model = ["model1_sl"]
                                     results_file = open(results_file_name,"a")
 
                                     for ind in range(len(which_model)):
+                                        results_file.write(20 * "*" + "\r\n")
                                         results_file.write("This is %s \r\n"%which_model[ind])
+                                        results_file.write("This is setting identifier %s \r\n" % setting_identification)
                                         results_file.write(20*"*" + "\r\n")
-                                        collected_histories = [x[ind][0] for x in training_results]
+                                        # collected_histories = [x[ind][0] for x in training_results]
+                                        collected_histories = [x[0] for x in training_results]
 
                                         for r in np.arange(1,repeat + 1): # patience is the number of epochs without improvement
                                             history = collected_histories[r-1]
@@ -191,19 +199,19 @@ if __name__ == "__main__":
                                             results_file.write("val_loss: %s \r\n" % history.history["val_loss"])
                                             training_result[str(setting_identification)+"_"+which_model[ind]+"_"+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
 
-                                        collected_outputs = [x[ind][1] for x in training_results]
+                                        # collected_outputs = [x[ind][1] for x in training_results]
+                                        collected_outputs = [x[1] for x in training_results]
 
                                         for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
                                             collection_errors = [output_dict[method] for output_dict in collected_outputs]
                                             error[str(setting_identification)+"_"+which_model[ind]+"_"+method] = collection_errors
 
 
-
                                     print("Working on Serie: %s"%name)
                                     print("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
 
-                                    results_file.write("Working on Serie: %s"%name)
-                                    results_file.write("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
+                                    results_file.write("Working on Serie: %s\r\n"%name)
+                                    results_file.write("Setting %s/%s is completed\r\n"%(setting_identification, amount_of_possibilities))
                                     results_file.close()
                                     setting_identification += 1
 
@@ -216,4 +224,3 @@ if __name__ == "__main__":
         print("Completed Serie: %s..." % name)
     results_file.close()
     print("Finished simulation - data written to txt file.")
-    # save the model with the best performance in a h5 file.

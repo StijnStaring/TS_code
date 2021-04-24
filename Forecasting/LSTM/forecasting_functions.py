@@ -182,7 +182,13 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
     model.add(Dense(units=y.shape[1],activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
-    model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+    try:
+        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+    except:
+        print("Training of Model 1 went wrong --> try again")
+        model, history = build_model_stateless1(setting, X, y, X_val, y_val, verbose_para = 1, save = False)
+    else:
+        print("Model 1 training_finished...")
     # save the trained_model
     if save:
         file_path = "model.h5"

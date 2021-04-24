@@ -1,6 +1,0 @@
-Running the similation on a PC with 4 cores...
-##################################################
-The calculation of the LSTM inputs is started for serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
---------------------------------------------------
-print dict: {48: ((561, 48, 59), (561, 1), (63, 48, 59), (63, 1))}.
-The parameter search has started for serie 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
