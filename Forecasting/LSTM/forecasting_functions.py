@@ -10,8 +10,6 @@ from keras.layers import Dense,  LSTM, Dropout, Flatten
 from keras.models import Sequential, save_model
 from keras import regularizers, optimizers
 from keras.callbacks import EarlyStopping, History
-from tensorflow.compat.v1 import get_default_graph
-from tensorflow import Graph
 from local_pc.Test_basemodel_functions import Switcher
 
 
@@ -158,9 +156,11 @@ def generate_training_validation_division(data: np.ndarray, reference: np.array,
 
 
 
-def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False):
+def build_model_stateless1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False):
     """
     The model uses the output of the LSTM layer as input to a dense layer.
+    This model doesn't expects a pre-made validation set.
+    The validation split is set on 10%.
     """
     history = History()
     model = Sequential()
@@ -183,10 +183,10 @@ def build_model_stateless1(setting: forecast_setting, X, y, X_val, y_val, verbos
     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
     try:
-        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_split=0.10,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
     except:
         print("Training of Model 1 went wrong --> try again")
-        model, history = build_model_stateless1(setting, X, y, X_val, y_val, verbose_para = 1, save = False)
+        model, history = build_model_stateless1(setting, X, y, verbose_para = 1, save = False)
     else:
         print("Model 1 training_finished...")
     # save the trained_model
@@ -508,4 +508,22 @@ def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = Tru
         references = all_references[all_references.index.dayofyear == day_int]
         show_forecast(predictions, references, ID, str(day_int), save)
     plt.show()
+
+def unison_shuffled_copies(a, b):
+    assert len(a) == len(b)
+    p = np.random.permutation(len(a))
+    return a[p], b[p]
+
+def create_validation_stateless(kwargs,ratio = 0.9):
+    new_dict = {}
+    for (key,value) in kwargs.items():
+        X = value[0]
+        y = value[1]
+        split_value = int(ratio*len(value[0]))
+        X_train = X[0:split_value,:,:]
+        y_train = y[0:split_value,:]
+        X_val = X[split_value:, :, :]
+        y_val = y[split_value:, :]
+        new_dict[key] = (X_train,y_train,X_val,y_val)
+    return new_dict
 
