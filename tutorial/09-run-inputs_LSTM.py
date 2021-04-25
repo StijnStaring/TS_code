@@ -14,7 +14,7 @@ if __name__ == "__main__":
     config = ScriptRunConfig(
         source_directory="D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\src",
         script='LSTM_inputs_VM.py',
-        compute_target='gpu-cluster',
+        compute_target='cpu-cluster',
         arguments=[
             '--data_path', dataset.as_named_input('input').as_mount(),
         ],

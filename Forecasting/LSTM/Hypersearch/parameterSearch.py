@@ -14,8 +14,8 @@ from keras.backend import clear_session, reset_uids
 # first stage --> regularization off
 class ParameterSearch:
     def __init__(self):
-        self.list_units_LSTM = [20,50,100]
-        self.list_layers_LSTM = [1,2,3]
+        self.list_units_LSTM = [20]
+        self.list_layers_LSTM = [1]
         self.list_dropout_LSTM = [0]
         self.list_recurrent_dropout_LSTM = [0]
         self.list_kernel_regularization_LSTM = [None]
@@ -29,21 +29,16 @@ class ParameterSearch:
         self.list_kernel_regularization_DENSE = [None]
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
-
-        # self.list_lag_value = [48,96,336,672] # four is chosen becaus have four cores
-        self.list_lag_value = [48, 96, 336]  # four is chosen becaus have four cores
+        # this has to be changed!
+        # self.list_lag_value = [48, 96, 336]  # four is chosen becaus have four cores
+        self.list_lag_value = [48]
         self.list_nb_epoch = [1000]
         self.list_activation = ['relu']
-        self.list_batch_size_parameter = [1,32,64]
-        self.list_learning_rate = [10**-3,10**-2,10**-1]
+        self.list_batch_size_parameter = [1]
+        self.list_learning_rate = [10**-2]
         self.list_patience = [5]
         self.list_shuffle = ['True']
-        self.list_repeat = [4] #four is chosen because have four cores
-
-def run_once_input_LSTM(kwargs):
-    print("Running LSTM input...")
-    # Now are still trying with toy trainingset
-    return input_output_LSTM(kwargs["ts"].training_true, kwargs["ts"].temperature_norm, kwargs["lag_value"])
+        self.list_repeat = [8] #four is chosen because have four cores
 
 def run_parameter_setting(kwargs):
     all_predictions: pd.Series
@@ -51,7 +46,7 @@ def run_parameter_setting(kwargs):
     print("Model 1 running...")
     # clear_session()
     trained_model1, history1 = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-    # remember that you have to set the test to the real test values!
+    print("Model 1 training finished...")
     all_predictions, all_references = test_set_prediction(trained_model1, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
     # clear_session()
     print("Model 1 prediction finished...")
@@ -61,7 +56,6 @@ def run_parameter_setting(kwargs):
         outputs_model1[method] = output
 
     return history1, outputs_model1
-
 
 
 if __name__ == "__main__":
@@ -75,63 +69,49 @@ if __name__ == "__main__":
     if Stijn:
         path_history = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_series.csv"
         path_temperature = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_temp_series.csv"
+        path_npy = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
 
     else:
         path_history = ""
         path_temperature = ""
+        path_npy = ""
 
     fullYeardata = pd.read_csv(path_history,index_col= "date",parse_dates= True)
-    names = fullYeardata.columns
+    # change this [0]!
+    names = fullYeardata.columns[0]
     av_temperature = pd.read_csv(path_temperature,index_col="meter_id",parse_dates=True)
 
     print("Running this file on a PC with %s cores..." % (cpu_count()))
-    results_file_name = join(output_folder_path,str(time()) + ".txt")
-    results_file = open(results_file_name, "w")
-    results_file.write("Running the similation on a PC with %s cores...\r\n" % (cpu_count()))
-    results_file.close()
+
     chosen_parameters = ParameterSearch()
     amount_of_possibilities: int = reduce((lambda x, y: x * y), [len(x) for x in list(vars(chosen_parameters).values())])
+
     print("Found %s sets of parameters." % amount_of_possibilities)
 
     which_model = ["model1_sl"]
     start_time_program = time()
     for name in names:
-        start_inputs = time()
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
         logBook = pd.DataFrame(index=logBookIndex)
         training_result = pd.DataFrame(index=["#epoch", "#training loss final", "#validation loss final"])
-        # calculate the LSTM input matrices
-        results_file = open(results_file_name, "a")
-        results_file.write("#" * 50 + "\r\n")
-        results_file.write("The calculation of the LSTM inputs is started for serie: %s.\r\n"%name)
-        results_file.write("-"*50 + "\r\n")
+
         ts = time_serie(fullYeardata[name], av_temperature)
-        # p = Pool(processes=cpu_count())
-        # results = p.map(run_once_input_LSTM, [{"ts":ts, "lag_value": lag_value} for lag_value in chosen_parameters.list_lag_value])
-        # lag_dict = {chosen_parameters.list_lag_value[i]: results[i] for i in range(len(chosen_parameters.list_lag_value))}
-
-        #The data that is going in, is shuffled! This is because when shuffle is true in the fit function the validation set
-        #is still taken as the last samples.
-        # lag_dict = {key: unison_shuffled_copies(value[0], value[1]) for (key, value) in lag_dict.items()}
-        # print_dict = {key: (value[0].shape, value[1].shape) for (key, value) in lag_dict.items()}
-        # print_dict = {key: (value[0].shape, value[1].shape, value[2].shape, value[3].shape) for (key, value) in lag_dict.items()}
-
-
-        # doing parameter search
         setting_identification = 1
         for lag_value in chosen_parameters.list_lag_value:
-            print("lag_value: %s \r\n"%lag_value)
-            X_train,y_train = run_once_input_LSTM({"ts":ts, "lag_value": lag_value})
-            print("input found...")
+            print("lag_value: %s \r\n" % lag_value)
+
+            # load the LSTM input matrices
+            X_train = np.load("X_" + name + "_" + str(lag_value) + ".npy")
+            y_train = np.load("y_" + name + "_" + str(lag_value) + ".npy")
+            print("inputs found...\r\n")
             X_train,y_train = unison_shuffled_copies(X_train,y_train)
-            print_dict = {str(lag_value): (X_train.shape, y_train.shape)}
-            results_file = open(results_file_name, "a")
-            results_file.write("print dict: %s.\r\n" % print_dict)
-            results_file.write("The parameter search has started for serie %s.\r\n" % name)
+
+            print("The shape of X_train: %s"%(X_train.shape,))
+            print("The shape of y_train: %s" % (y_train.shape,))
+
+            print("The parameter search has started for serie %s.\r\n" % name)
             print(50 * "-" + "\r\n")
-            results_file.close()
-            finished_inputs = time()
 
             dropout_LSTM = chosen_parameters.list_dropout_LSTM[0]
             recurrent_dropout_LSTM = chosen_parameters.list_recurrent_dropout_LSTM[0]
@@ -178,8 +158,6 @@ if __name__ == "__main__":
                                         clear_session()
                                         reset_uids()
 
-                                    results_file = open(results_file_name,"a")
-
                                     for ind in range(len(which_model)):
                                         results_file.write(20 * "*" + "\r\n")
                                         results_file.write("This is %s \r\n"%which_model[ind])
@@ -201,22 +179,15 @@ if __name__ == "__main__":
                                         for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
                                             collection_errors = [output_dict[method] for output_dict in collected_outputs]
                                             error[str(setting_identification)+"_"+method] = collection_errors
+                                    end_time = time()
 
-
-                                print("Working on Serie: %s"%name)
-                                print("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
-                                end_time = time()
-                                duration = end_time-start_time
-                                predicted_finish = amount_of_possibilities*3*duration + (finished_inputs-start_inputs)*3 + start_time_program
-                                print("The elapsed time to calculate one parameter is: %s"%duration)
-                                print("The expected remaining running time is: %s minutes."%((predicted_finish - time())/60))
-
-                                exit()
-
-                                results_file.write("Working on Serie: %s\r\n"%name)
-                                results_file.write("Setting %s/%s is completed\r\n"%(setting_identification, amount_of_possibilities))
-                                results_file.close()
-                                setting_identification += 1
+                                    print("Working on Serie: %s"%name)
+                                    print("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
+                                    duration = end_time-start_time
+                                    predicted_finish = amount_of_possibilities*3*duration + (finished_inputs-start_inputs)*3 + start_time_program
+                                    print("The elapsed time to calculate one parameter is: %s"%duration)
+                                    print("The expected remaining running time is: %s minutes."%((predicted_finish - time())/60))
+                                    setting_identification += 1
 
         error_csv_path = join(output_folder_path,"error_" +which_model[0] + "_" +  name + ".csv")
         error.to_csv(error_csv_path)
