@@ -30,7 +30,8 @@ class ParameterSearch:
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
 
-        self.list_lag_value = [48,96,336,672] # four is chosen becaus have four cores
+        # self.list_lag_value = [48,96,336,672] # four is chosen becaus have four cores
+        self.list_lag_value = [48, 96, 336]  # four is chosen becaus have four cores
         self.list_nb_epoch = [1000]
         self.list_activation = ['relu']
         self.list_batch_size_parameter = [1,32,64]
@@ -59,19 +60,6 @@ def run_parameter_setting(kwargs):
         output: float = Switcher(method, all_predictions, all_references)
         outputs_model1[method] = output
 
-    # print("Model 2 running...")
-    # trained_model2, history2, graph2 = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["X_val"], kwargs["y_val"], kwargs["verbose_para"], kwargs["save"])
-    # print("Model 2 training_finished...")
-    # # clear_session()
-    #
-    # all_predictions, all_references = test_set_prediction(trained_model2, kwargs["setting"], kwargs["ts"], kwargs["ts"].test, kwargs["X"], kwargs["X_val"], True, False)
-    # # clear_session()
-    # outputs_model2 = dict()
-    # for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
-    #     output: float = Switcher(method, all_predictions, all_references)
-    #     outputs_model2[method] = output
-
-    # return (history1,outputs_model1),(history2,outputs_model2)
     return history1, outputs_model1
 
 
@@ -119,46 +107,53 @@ if __name__ == "__main__":
         results_file.write("The calculation of the LSTM inputs is started for serie: %s.\r\n"%name)
         results_file.write("-"*50 + "\r\n")
         ts = time_serie(fullYeardata[name], av_temperature)
-        p = Pool(processes=cpu_count())
-        results = p.map(run_once_input_LSTM, [{"ts":ts, "lag_value": lag_value} for lag_value in chosen_parameters.list_lag_value])
-        lag_dict = {chosen_parameters.list_lag_value[i]: results[i] for i in range(len(chosen_parameters.list_lag_value))}
+        # p = Pool(processes=cpu_count())
+        # results = p.map(run_once_input_LSTM, [{"ts":ts, "lag_value": lag_value} for lag_value in chosen_parameters.list_lag_value])
+        # lag_dict = {chosen_parameters.list_lag_value[i]: results[i] for i in range(len(chosen_parameters.list_lag_value))}
 
         #The data that is going in, is shuffled! This is because when shuffle is true in the fit function the validation set
         #is still taken as the last samples.
-        lag_dict = {key: unison_shuffled_copies(value[0], value[1]) for (key, value) in lag_dict.items()}
-        print_dict = {key: (value[0].shape, value[1].shape) for (key, value) in lag_dict.items()}
+        # lag_dict = {key: unison_shuffled_copies(value[0], value[1]) for (key, value) in lag_dict.items()}
+        # print_dict = {key: (value[0].shape, value[1].shape) for (key, value) in lag_dict.items()}
         # print_dict = {key: (value[0].shape, value[1].shape, value[2].shape, value[3].shape) for (key, value) in lag_dict.items()}
-        results_file = open(results_file_name, "a")
-        results_file.write("print dict: %s.\r\n"%print_dict)
-        results_file.write("The parameter search has started for serie %s.\r\n"%name)
-        print(50*"-" + "\r\n")
-        results_file.close()
-        finished_inputs = time()
+
 
         # doing parameter search
         setting_identification = 1
-        dropout_LSTM = chosen_parameters.list_dropout_LSTM[0]
-        recurrent_dropout_LSTM = chosen_parameters.list_recurrent_dropout_LSTM[0]
-        kernel_regularization_LSTM = chosen_parameters.list_kernel_regularization_LSTM[0]
-        recurrent_regularization_LSTM  = chosen_parameters.list_recurrent_regularization_LSTM[0]
-        bais_regularization_LSTM = chosen_parameters.list_bais_regularization_LSTM[0]
-        activity_regularization_LSTM = chosen_parameters.list_activity_regularization_LSTM[0]
+        for lag_value in chosen_parameters.list_lag_value:
+            print("lag_value: %s \r\n"%lag_value)
+            X_train,y_train = run_once_input_LSTM({"ts":ts, "lag_value": lag_value})
+            print("input found...")
+            X_train,y_train = unison_shuffled_copies(X_train,y_train)
+            print_dict = {str(lag_value): (X_train.shape, y_train.shape)}
+            results_file = open(results_file_name, "a")
+            results_file.write("print dict: %s.\r\n" % print_dict)
+            results_file.write("The parameter search has started for serie %s.\r\n" % name)
+            print(50 * "-" + "\r\n")
+            results_file.close()
+            finished_inputs = time()
 
-        dropout_DENSE = chosen_parameters.list_dropout_DENSE[0]
-        kernel_regularization_DENSE = chosen_parameters.list_kernel_regularization_DENSE[0]
-        bais_regularization_DENSE = chosen_parameters.list_bais_regularization_DENSE[0]
-        activity_regularization_DENSE = chosen_parameters.list_activity_regularization_DENSE[0]
+            dropout_LSTM = chosen_parameters.list_dropout_LSTM[0]
+            recurrent_dropout_LSTM = chosen_parameters.list_recurrent_dropout_LSTM[0]
+            kernel_regularization_LSTM = chosen_parameters.list_kernel_regularization_LSTM[0]
+            recurrent_regularization_LSTM  = chosen_parameters.list_recurrent_regularization_LSTM[0]
+            bais_regularization_LSTM = chosen_parameters.list_bais_regularization_LSTM[0]
+            activity_regularization_LSTM = chosen_parameters.list_activity_regularization_LSTM[0]
 
-        nb_epoch = chosen_parameters.list_nb_epoch[0]
-        activation = chosen_parameters.list_activation[0]
-        patience = chosen_parameters.list_patience[0]
-        shuffle = chosen_parameters.list_shuffle[0]
+            dropout_DENSE = chosen_parameters.list_dropout_DENSE[0]
+            kernel_regularization_DENSE = chosen_parameters.list_kernel_regularization_DENSE[0]
+            bais_regularization_DENSE = chosen_parameters.list_bais_regularization_DENSE[0]
+            activity_regularization_DENSE = chosen_parameters.list_activity_regularization_DENSE[0]
 
-        for units_LSTM in chosen_parameters.list_units_LSTM:
-            for layers_LSTM in chosen_parameters.list_layers_LSTM:
-                for units_DENSE in chosen_parameters.list_units_DENSE:
-                    for layers_DENSE in chosen_parameters.list_layers_DENSE:
-                        for lag_value in chosen_parameters.list_lag_value:
+            nb_epoch = chosen_parameters.list_nb_epoch[0]
+            activation = chosen_parameters.list_activation[0]
+            patience = chosen_parameters.list_patience[0]
+            shuffle = chosen_parameters.list_shuffle[0]
+
+            for units_LSTM in chosen_parameters.list_units_LSTM:
+                for layers_LSTM in chosen_parameters.list_layers_LSTM:
+                    for units_DENSE in chosen_parameters.list_units_DENSE:
+                        for layers_DENSE in chosen_parameters.list_layers_DENSE:
                             for batch_size_parameter in chosen_parameters.list_batch_size_parameter:
                                 for learning_rate in chosen_parameters.list_learning_rate:
                                     start_time = time()
@@ -170,11 +165,18 @@ if __name__ == "__main__":
                                     kernel_regularizer_DENSE = kernel_regularization_DENSE, bais_regularizer_DENSE = bais_regularization_DENSE, activity_regularizer_DENSE = activity_regularization_DENSE)
                                     logBook[str(setting_identification)] = [str(x) for x in list(vars(runner).values())]
                                     # (X_train,y_train,X_val,y_val) = lag_dict.get(lag_value)
-                                    (X_train, y_train) = lag_dict.get(lag_value)
-                                    p = Pool(processes=cpu_count())
-                                    training_results = p.map(run_parameter_setting, [{"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":0, "save": False} for iteration in range(repeat)])
-                                    clear_session()
-                                    reset_uids()
+                                    # (X_train, y_train) = lag_dict.get(lag_value)
+                                    # p = Pool(processes=cpu_count())
+                                    # training_results = map(run_parameter_setting, [ for iteration in range(repeat)])
+                                    collected_histories = []
+                                    collected_outputs = []
+                                    print("start iteration. \r\n")
+                                    for iteration in range(repeat):
+                                        history,outputs_model = run_parameter_setting({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False})
+                                        collected_histories.append(history)
+                                        collected_outputs.append(outputs_model)
+                                        clear_session()
+                                        reset_uids()
 
                                     results_file = open(results_file_name,"a")
 
@@ -184,7 +186,7 @@ if __name__ == "__main__":
                                         results_file.write("This is setting identifier %s \r\n" % setting_identification)
                                         results_file.write(20*"*" + "\r\n")
                                         # collected_histories = [x[ind][0] for x in training_results]
-                                        collected_histories = [x[0] for x in training_results]
+                                        # collected_histories = [x[0] for x in training_results]
 
                                         for r in np.arange(1,repeat + 1): # patience is the number of epochs without improvement
                                             history = collected_histories[r-1]
@@ -194,27 +196,27 @@ if __name__ == "__main__":
                                             training_result[str(setting_identification)+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
 
                                         # collected_outputs = [x[ind][1] for x in training_results]
-                                        collected_outputs = [x[1] for x in training_results]
+                                        # collected_outputs = [x[1] for x in training_results]
 
                                         for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
                                             collection_errors = [output_dict[method] for output_dict in collected_outputs]
                                             error[str(setting_identification)+"_"+method] = collection_errors
 
 
-                                    print("Working on Serie: %s"%name)
-                                    print("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
-                                    end_time = time()
-                                    duration = end_time-start_time
-                                    predicted_finish = amount_of_possibilities*3*duration + (finished_inputs-start_inputs)*3 + start_time_program
-                                    print("The elapsed time to calculate one parameter is: %s"%duration)
-                                    print("The expected remaining running time is: %s minutes."%((predicted_finish - time())/60))
+                                print("Working on Serie: %s"%name)
+                                print("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
+                                end_time = time()
+                                duration = end_time-start_time
+                                predicted_finish = amount_of_possibilities*3*duration + (finished_inputs-start_inputs)*3 + start_time_program
+                                print("The elapsed time to calculate one parameter is: %s"%duration)
+                                print("The expected remaining running time is: %s minutes."%((predicted_finish - time())/60))
 
-                                    exit()
+                                exit()
 
-                                    results_file.write("Working on Serie: %s\r\n"%name)
-                                    results_file.write("Setting %s/%s is completed\r\n"%(setting_identification, amount_of_possibilities))
-                                    results_file.close()
-                                    setting_identification += 1
+                                results_file.write("Working on Serie: %s\r\n"%name)
+                                results_file.write("Setting %s/%s is completed\r\n"%(setting_identification, amount_of_possibilities))
+                                results_file.close()
+                                setting_identification += 1
 
         error_csv_path = join(output_folder_path,"error_" +which_model[0] + "_" +  name + ".csv")
         error.to_csv(error_csv_path)

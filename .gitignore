@@ -1,5 +1,7 @@
 tutorial/data/
 Forecasting/LSTM/Vanilla_LSTM_figures/
 Forecasting/basemodel/data
+Forecasting/LSTM/VM_calculating_inputs_LSTM/output_arrays/
+
 
 

@@ -1,0 +1,18 @@
+name: forecasting-env
+channels:
+    - defaults
+    - scikit-learn
+    - conda-forge
+dependencies:
+    - python==3.7.10
+    - pandas
+    - numpy
+    - matplotlib
+    - scikit-learn
+    - pip
+    - keras==2.2.5
+    - tensorflow==1.14.0
+    - pip:
+        - azureml-sdk
+        - DateTime
+        - casadi
