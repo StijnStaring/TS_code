@@ -38,7 +38,7 @@ class ParameterSearch:
         self.list_learning_rate = [10**-2]
         self.list_patience = [5]
         self.list_shuffle = ['True']
-        self.list_repeat = [8] #four is chosen because have four cores
+        self.list_repeat = [4] #four is chosen because have four cores
 
 def run_parameter_setting(kwargs):
     all_predictions: pd.Series
@@ -62,9 +62,8 @@ if __name__ == "__main__":
     dirname = dirname(__file__)
     makedirs("./outputs", exist_ok=True)
     output_folder_path = join(dirname, 'outputs')
+    multithreading = True
     Stijn = True
-    path_history:str
-    path_temperature:str
 
     if Stijn:
         path_history = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_series.csv"
@@ -77,8 +76,7 @@ if __name__ == "__main__":
         path_npy = ""
 
     fullYeardata = pd.read_csv(path_history,index_col= "date",parse_dates= True)
-    # change this [0]!
-    names = fullYeardata.columns[0]
+    names = fullYeardata.columns
     av_temperature = pd.read_csv(path_temperature,index_col="meter_id",parse_dates=True)
 
     print("Running this file on a PC with %s cores..." % (cpu_count()))
@@ -90,7 +88,10 @@ if __name__ == "__main__":
 
     which_model = ["model1_sl"]
     start_time_program = time()
-    for name in names:
+    counter = 1
+    #change this!!
+    ##################
+    for name in names[0:1]:
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
         logBook = pd.DataFrame(index=logBookIndex)
@@ -104,8 +105,8 @@ if __name__ == "__main__":
             # load the LSTM input matrices
             X_train = np.load("X_" + name + "_" + str(lag_value) + ".npy")
             y_train = np.load("y_" + name + "_" + str(lag_value) + ".npy")
-            print("inputs found...\r\n")
             X_train,y_train = unison_shuffled_copies(X_train,y_train)
+            print("inputs found...\r\n")
 
             print("The shape of X_train: %s"%(X_train.shape,))
             print("The shape of y_train: %s" % (y_train.shape,))
@@ -144,50 +145,50 @@ if __name__ == "__main__":
                                     recurrent_regularizer_LSTM = recurrent_regularization_LSTM, bais_regularizer_LSTM = bais_regularization_LSTM, activity_regularizer_LSTM = activity_regularization_LSTM, dropout_DENSE = dropout_DENSE,
                                     kernel_regularizer_DENSE = kernel_regularization_DENSE, bais_regularizer_DENSE = bais_regularization_DENSE, activity_regularizer_DENSE = activity_regularization_DENSE)
                                     logBook[str(setting_identification)] = [str(x) for x in list(vars(runner).values())]
-                                    # (X_train,y_train,X_val,y_val) = lag_dict.get(lag_value)
-                                    # (X_train, y_train) = lag_dict.get(lag_value)
-                                    # p = Pool(processes=cpu_count())
-                                    # training_results = map(run_parameter_setting, [ for iteration in range(repeat)])
-                                    collected_histories = []
-                                    collected_outputs = []
                                     print("start iteration. \r\n")
-                                    for iteration in range(repeat):
-                                        history,outputs_model = run_parameter_setting({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False})
-                                        collected_histories.append(history)
-                                        collected_outputs.append(outputs_model)
+
+                                    if multithreading:
+                                        p = Pool(processes=cpu_count())
+                                        training_results = map(run_parameter_setting, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train, "verbose_para": 0,"save": False} for iteration in range(repeat)])
                                         clear_session()
                                         reset_uids()
+                                        collected_histories = [x[0] for x in training_results]
+                                        collected_outputs = [x[1] for x in training_results]
 
-                                    for ind in range(len(which_model)):
-                                        results_file.write(20 * "*" + "\r\n")
-                                        results_file.write("This is %s \r\n"%which_model[ind])
-                                        results_file.write("This is setting identifier %s \r\n" % setting_identification)
-                                        results_file.write(20*"*" + "\r\n")
-                                        # collected_histories = [x[ind][0] for x in training_results]
-                                        # collected_histories = [x[0] for x in training_results]
+                                    else:
+                                        for iteration in range(repeat):
+                                            history,outputs_model = run_parameter_setting({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":0, "save": False})
+                                            collected_histories.append(history)
+                                            collected_outputs.append(outputs_model)
+                                            clear_session()
+                                            reset_uids()
 
-                                        for r in np.arange(1,repeat + 1): # patience is the number of epochs without improvement
-                                            history = collected_histories[r-1]
-                                            results_file.write("Run: %s \r\n"%r)
-                                            results_file.write("loss: %s \r\n" % history.history["loss"])
-                                            results_file.write("val_loss: %s \r\n" % history.history["val_loss"])
-                                            training_result[str(setting_identification)+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
+                                    print(20 * "*" + "\r\n")
+                                    print("This is model: %s. \r\n"%which_model[0])
+                                    print("This is setting identifier %s \r\n" % setting_identification)
+                                    print(20*"*" + "\r\n")
 
-                                        # collected_outputs = [x[ind][1] for x in training_results]
-                                        # collected_outputs = [x[1] for x in training_results]
+                                    for r in np.arange(1,repeat + 1): # patience is the number of epochs without improvement
+                                        history = collected_histories[r-1]
+                                        print("Run: %s \r\n"%r)
+                                        print("loss: %s \r\n" % history.history["loss"])
+                                        print("val_loss: %s \r\n" % history.history["val_loss"])
+                                        training_result[str(setting_identification)+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
 
-                                        for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
-                                            collection_errors = [output_dict[method] for output_dict in collected_outputs]
-                                            error[str(setting_identification)+"_"+method] = collection_errors
+
+                                    for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
+                                        collection_errors = [output_dict[method] for output_dict in collected_outputs]
+                                        error[str(setting_identification)+"_"+method] = collection_errors
                                     end_time = time()
 
-                                    print("Working on Serie: %s"%name)
+                                    print("Working on Serie: %s."%name)
                                     print("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
                                     duration = end_time-start_time
-                                    predicted_finish = amount_of_possibilities*3*duration + (finished_inputs-start_inputs)*3 + start_time_program
+                                    predicted_finish = (amount_of_possibilities*len(names) - counter)*duration + start_time_program
                                     print("The elapsed time to calculate one parameter is: %s"%duration)
                                     print("The expected remaining running time is: %s minutes."%((predicted_finish - time())/60))
                                     setting_identification += 1
+                                    counter += 1
 
         error_csv_path = join(output_folder_path,"error_" +which_model[0] + "_" +  name + ".csv")
         error.to_csv(error_csv_path)
@@ -196,5 +197,4 @@ if __name__ == "__main__":
         training_result_csv_path = join(output_folder_path, "training_result_" + which_model[0] + "_" + name + ".csv")
         training_result.to_csv(training_result_csv_path)
         print("Completed Serie: %s..." % name)
-    results_file.close()
-    print("Finished simulation - data written to txt file.")
+    print("Finished simulation...")

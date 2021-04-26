@@ -310,7 +310,10 @@ def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_nor
         end = index_time_stamp
         history = TS_copy[start:end+1]
         prediction_input, reference = input_output_LSTM(history, temperature_norm, lag_value) # also the value to predict should be given
+        shape = prediction_input.shape
+        assert shape[0] == 1 and shape[1] == lag_value and shape[2] == 59
         y_hat = model.predict(prediction_input, batch_size= 1)
+        assert len(y_hat) == 1
         # integrate the prediction in the TS_copy to be used in the next iterate
         TS_copy[time_stamp] = y_hat
         history_predictions[time_stamp] = y_hat

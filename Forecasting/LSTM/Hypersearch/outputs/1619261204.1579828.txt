@@ -1,4 +1,0 @@
-Running the similation on a PC with 4 cores...
-##################################################
-The calculation of the LSTM inputs is started for serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
---------------------------------------------------

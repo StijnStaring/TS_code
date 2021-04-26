@@ -1,4 +1,3 @@
-# 07-run-basemodel.py
 from azureml.core import Workspace
 from azureml.core import Experiment
 from azureml.core import Environment
@@ -7,7 +6,7 @@ from azureml.core import Dataset
 
 if __name__ == "__main__":
     ws = Workspace.from_config()
-    experiment = Experiment(workspace=ws, name='Calculate_LSTM_inputs')
+    experiment = Experiment(workspace=ws, name='Para_Stateless1')
     datastore = ws.get_default_datastore()
     dataset = Dataset.File.from_files(path=(datastore, 'datasets/three_series'))
 
