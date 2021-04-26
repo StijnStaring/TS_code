@@ -11,8 +11,8 @@ if __name__ == "__main__":
     dataset = Dataset.File.from_files(path=(datastore, 'datasets/three_series'))
 
     config = ScriptRunConfig(
-        source_directory="D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\src",
-        script='LSTM_inputs_VM.py',
+        source_directory="D:\AI_time_series_repos\TS_code\Forecasting\LSTM\Hypersearch\VM_parametersearch_stateless1\src",
+        script='parameterSearch.py',
         compute_target='cpucluster',
         arguments=[
             '--data_path', dataset.as_named_input('input').as_mount(),
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     config.run_config.environment = env
     # the first time that the run is submitted -> env is automatically registered in Azure
     run = experiment.submit(config)
-    run.tag("Description", "Compute LSTM inputs.")
+    run.tag("Description", "Try different parameters.")
     aml_url = run.get_portal_url()
     print("Submitted to compute cluster. Click link below")
     print("")
@@ -38,8 +38,8 @@ if __name__ == "__main__":
 
     # downloading the files
     import os
-    project_folder = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM"
-    outputs_path = os.path.join(project_folder, "output_arrays")
+    project_folder = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\Hypersearch\VM_parametersearch_stateless1"
+    outputs_path = os.path.join(project_folder, "outputs")
     os.makedirs(outputs_path, exist_ok=True)
 
     for filename in run.get_file_names():
@@ -47,6 +47,7 @@ if __name__ == "__main__":
         if filename.startswith('outputs'):
             print("Downloading " + filename)
             run.download_file(filename, output_file_path=outputs_path)
+
         # _, file_extension = os.path.splitext(filename)
         # if file_extension == ".npy":
         # elif filename.startswith("output_file"):
