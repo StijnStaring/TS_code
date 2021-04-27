@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import warnings as wn
 wn.filterwarnings(action='ignore')
-from local_pc.Test_basemodel_functions import EnglandAndWalesHolidayCalendar
+from Test_basemodel_functions_VM import EnglandAndWalesHolidayCalendar
 from keras.layers import Dense,  LSTM, Dropout, Flatten
 from keras.models import Sequential, save_model
 from keras import regularizers, optimizers
 from keras.callbacks import EarlyStopping, History
-from local_pc.Test_basemodel_functions import Switcher
+from Test_basemodel_functions_VM import Switcher
 
 
 class forecast_setting:
@@ -183,12 +183,16 @@ def build_model_stateless1(setting: forecast_setting, X, y, verbose_para: int = 
     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
     try:
-        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_split=0.10,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+        # There is no validation set used --> split validation is removed!!
+        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
     except:
         print("Training of Model 1 went wrong --> try again")
-        model, history = build_model_stateless1(setting, X, y, verbose_para = 1, save = False)
+        history = History()
+        history.history["loss"].append(np.nan)
+        model = np.nan
+        return model, history
     else:
-        print("Model 1 training_finished...")
+        print("Model 1 training has finished...")
     # save the trained_model
     if save:
         file_path = "model.h5"

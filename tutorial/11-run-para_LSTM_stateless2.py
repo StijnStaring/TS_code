@@ -6,12 +6,12 @@ from azureml.core import Dataset
 
 if __name__ == "__main__":
     ws = Workspace.from_config()
-    experiment = Experiment(workspace=ws, name='Para_Stateless1')
+    experiment = Experiment(workspace=ws, name='Para_Stateless2')
     datastore = ws.get_default_datastore()
     dataset = Dataset.File.from_files(path=(datastore, 'datasets/three_series'))
 
     config = ScriptRunConfig(
-        source_directory="D:\AI_time_series_repos\TS_code\Forecasting\LSTM\Hypersearch\VM_parametersearch_stateless1\src",
+        source_directory="D:\AI_time_series_repos\TS_code\Forecasting\LSTM\Hypersearch\VM_parametersearch_stateless2\src",
         script='parameterSearch_VM.py',
         compute_target='gpu-cluster',
         arguments=[
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     config.run_config.environment = env
     # the first time that the run is submitted -> env is automatically registered in Azure
     run = experiment.submit(config)
-    run.tag("Description", "Try different parameters.")
+    run.tag("Description", "Try different parameters stateless2 new.")
     aml_url = run.get_portal_url()
     print("Submitted to compute cluster. Click link below")
     print("")
@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     # downloading the files
     import os
-    project_folder = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\Hypersearch\VM_parametersearch_stateless1"
+    project_folder = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\Hypersearch\VM_parametersearch_stateless2"
     outputs_path = os.path.join(project_folder, "outputs")
     os.makedirs(outputs_path, exist_ok=True)
 

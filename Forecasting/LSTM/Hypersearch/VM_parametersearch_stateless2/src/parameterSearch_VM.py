@@ -45,14 +45,14 @@ def run_parameter_setting(kwargs):
     all_predictions: pd.Series
     all_references: pd.Series
     print("Model 1 running...")
-    trained_model1, history1 = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
+    trained_model1, history1, indicator = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
 
-    if np.isnan(trained_model1) or np.isnan(history1.history["loss"]) :
+    if np.isnan(indicator):
         outputs_model1 = dict()
         for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
             outputs_model1[method] = np.nan
 
-        return history1, outputs_model1
+        return history1, outputs_model1, indicator
 
     all_predictions, all_references = test_set_prediction(trained_model1, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
     print("Model 1 prediction finished...")
@@ -61,7 +61,7 @@ def run_parameter_setting(kwargs):
         output: float = Switcher(method, all_predictions, all_references)
         outputs_model1[method] = output
 
-    return history1, outputs_model1
+    return history1, outputs_model1, indicator
 
 
 if __name__ == "__main__":
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     with open(path_txt_file,"a") as txt_file:
         txt_file.write("Found %s sets of parameters.\n" % amount_of_possibilities)
 
-    which_model = ["model1_sl"]
+    which_model = ["model2_sl"]
     start_time_program = time()
     multithreading = False
     counter = 1
@@ -183,14 +183,17 @@ if __name__ == "__main__":
                                         reset_uids()
                                         collected_histories = [x[0] for x in training_results]
                                         collected_outputs = [x[1] for x in training_results]
+                                        collected_indicators = [x[2] for x in training_results]
 
                                     else:
                                         collected_histories = []
                                         collected_outputs = []
+                                        collected_indicators = []
                                         for iteration in range(repeat):
-                                            history,outputs_model = run_parameter_setting({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False})
+                                            history,outputs_model,indicator = run_parameter_setting({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False})
                                             collected_histories.append(history)
                                             collected_outputs.append(outputs_model)
+                                            collected_indicators.append(indicator)
                                             clear_session()
                                             reset_uids()
                                     with open(path_txt_file,"a") as txt_file:
@@ -205,17 +208,25 @@ if __name__ == "__main__":
 
                                         for r in np.arange(1,repeat + 1): # patience is the number of epochs without improvement
                                             history = collected_histories[r-1]
+                                            indicator = collected_indicators[r-1]
                                             print("Run: %s \r\n"%r)
                                             txt_file.write("Run: %s \r\n" % r)
-                                            print("loss: %s \r\n" % history.history["loss"])
-                                            txt_file.write("loss: %s \r\n" % history.history["loss"])
+                                            if np.isnan(indicator):
+                                                print("loss: %s \r\n" % np.nan)
+                                                txt_file.write("loss: %s \r\n" % np.nan)
+                                                training_result[str(setting_identification) + "_run_" + str(r)] = [
+                                                    1,
+                                                    np.nan]
+                                            else:
+                                                print("loss: %s \r\n" % history.history["loss"])
+                                                txt_file.write("loss: %s \r\n" % history.history["loss"])
+                                                training_result[str(setting_identification) + "_run_" + str(r)] = [
+                                                    len(history.history["loss"]) - patience,
+                                                    history.history["loss"][-1 - patience]]
+
                                             # print("val_loss: %s \r\n" % history.history["val_loss"])
                                             # txt_file.write("val_loss: %s \r\n" % history.history["val_loss"])
                                             # training_result[str(setting_identification)+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
-                                            training_result[str(setting_identification) + "_run_" + str(r)] = [
-                                                len(history.history["loss"]) - patience,
-                                                history.history["loss"][-1 - patience]]
-
 
                                         for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
                                             collection_errors = [output_dict[method] for output_dict in collected_outputs]

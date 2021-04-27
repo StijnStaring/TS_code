@@ -1,22 +1,18 @@
-from forecasting_functions_VM import *
+from forecasting_functions import *
 from multiprocessing import Pool, cpu_count
 from time import time
 from functools import reduce
-from os import path, listdir, makedirs
+from os import makedirs, path
 from tensorflow.python.util import deprecation
 deprecation._PRINT_DEPRECATION_WARNINGS = False
 from keras.backend import clear_session, reset_uids
-from azureml.core import Run
-import argparse
-
-run = Run.get_context()
 
 # parameters that are tried
 # first stage --> regularization off
 class ParameterSearch:
     def __init__(self):
-        self.list_units_LSTM = [20,50]
-        self.list_layers_LSTM = [1,3]
+        self.list_units_LSTM = [20, 50]
+        self.list_layers_LSTM = [1, 3]
         self.list_dropout_LSTM = [0]
         self.list_recurrent_dropout_LSTM = [0]
         self.list_kernel_regularization_LSTM = [None]
@@ -30,29 +26,20 @@ class ParameterSearch:
         self.list_kernel_regularization_DENSE = [None]
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
-        self.list_lag_value = [48,96]
+        self.list_lag_value = [48, 96]
         self.list_nb_epoch = [1]
         self.list_activation = ['relu']
         self.list_batch_size_parameter = [48]
-        self.list_learning_rate = [10**-3,10**-2,10**-1]
+        self.list_learning_rate = [10 ** -3, 10 ** -2, 10 ** -1]
         self.list_patience = [0]
-        self.list_shuffle = ['True'] #shuffling is set to True
-        self.list_repeat = [3] #four is chosen because have four cores
+        self.list_shuffle = ['True']  # shuffling is set to True
+        self.list_repeat = [3]  # four is chosen because have four cores
 
         assert self.list_patience[0] < self.list_nb_epoch[0]
 
 def run_parameter_setting(kwargs):
-    all_predictions: pd.Series
-    all_references: pd.Series
     print("Model 1 running...")
-    trained_model1, history1 = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-
-    if np.isnan(trained_model1) or np.isnan(history1.history["loss"]) :
-        outputs_model1 = dict()
-        for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
-            outputs_model1[method] = np.nan
-
-        return history1, outputs_model1
+    trained_model1, history1 = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
 
     all_predictions, all_references = test_set_prediction(trained_model1, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
     print("Model 1 prediction finished...")
@@ -65,35 +52,29 @@ def run_parameter_setting(kwargs):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--data_path',
-        type=str,
-        help='Path to the training data'
-    )
-    args = parser.parse_args()
-    print("===== DATA =====")
-    print("DATA PATH: " + args.data_path)
-    print("LIST FILES IN DATA PATH...")
-    print(listdir(args.data_path))
-    print("================")
 
     Stijn = True
+
     if Stijn:
-        path_history = path.join(args.data_path, "DF_three_series.csv")
-        path_temperature = path.join(args.data_path, "DF_three_temp_series.csv")
+        path_history = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_series.csv"
+        path_temperature = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_temp_series.csv"
+        path_npy = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
 
     else:
-        path_history = "Path is not yet indicated."
-        path_temperature = "Path is not yet indicated."
+        path_history = ""
+        path_temperature = ""
+        path_npy = ""
 
     fullYeardata = pd.read_csv(path_history,index_col= "date",parse_dates= True)
     names = fullYeardata.columns
     av_temperature = pd.read_csv(path_temperature,index_col="meter_id",parse_dates=True)
 
+    print("Running this file on a PC with %s cores..." % (cpu_count()))
+
     makedirs("./outputs", exist_ok=True)
     output_path = "./outputs"
     path_txt_file = './outputs/output_file.txt'
+    path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
 
     print("CSV files are loaded...")
 
@@ -109,11 +90,12 @@ if __name__ == "__main__":
     with open(path_txt_file,"a") as txt_file:
         txt_file.write("Found %s sets of parameters.\n" % amount_of_possibilities)
 
-    which_model = ["model1_sl"]
+    which_model = ["model2_sl"]
     start_time_program = time()
     multithreading = False
     counter = 1
-
+    #change this!!
+    ##################
     for name in names:
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
@@ -126,15 +108,15 @@ if __name__ == "__main__":
             print("lag_value: %s \r\n" % lag_value)
 
             # load the LSTM input matrices
-            path_X_train = path.join(args.data_path, "X_" + name + "_" + str(lag_value) + ".npy")
+            path_X_train = path.join(path_to_array, "X_" + name + "_" + str(lag_value) + ".npy")
             X_train = np.load(path_X_train)
-            path_y_train = path.join(args.data_path, "y_" + name + "_" + str(lag_value) + ".npy")
+            path_y_train = path.join(path_to_array, "y_" + name + "_" + str(lag_value) + ".npy")
             y_train = np.load(path_y_train)
             # take the last 10 days of November as validation for the parameter search
             X_train = X_train[:-480]
             y_train = y_train[:-480]
             ts.test_true = ts.training_true[-480:]
-            # X_train,y_train = unison_shuffled_copies(X_train,y_train) # no needed anymore because no validation set
+            # X_train,y_train = unison_shuffled_copies(X_train,y_train) # no val anymore
             print("inputs found...\r\n")
 
             print("The shape of X_train: %s"%(X_train.shape,))
@@ -227,9 +209,9 @@ if __name__ == "__main__":
                                         print("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
                                         txt_file.write("Setting %s/%s is completed\r\n" % (setting_identification, amount_of_possibilities))
                                         duration = end_time-start_time
-                                        predicted_finish = (amount_of_possibilities*len(names) - counter)*duration
+                                        predicted_finish = (amount_of_possibilities*len(names)- counter)*duration
                                         print("The elapsed time to calculate one parameter is: %s minutes \r\n"%(duration/60))
-                                        txt_file.write("The elapsed time to calculate one parameter is: %s minutes.\n" % (duration/60))
+                                        txt_file.write("The elapsed time to calculate one parameter is: %s minutes\n" % (duration/60))
                                         print("The expected remaining running time is: %s minutes.\r\n"%(predicted_finish/60))
                                     setting_identification += 1
                                     counter += 1
@@ -245,6 +227,6 @@ if __name__ == "__main__":
             txt_file.write(100 * "#" + "\n")
             txt_file.write("Completed Serie: %s...\n" % name)
             txt_file.write(100*"#"+"\n")
-            txt_file.write("The program ran for %s minutes."%((end_time_program-start_time_program)/60))
+            txt_file.write("The program ran for %s minutes." % ((end_time_program - start_time_program) / 60))
         print("Completed Serie: %s..." % name)
     print("Finished simulation...")
