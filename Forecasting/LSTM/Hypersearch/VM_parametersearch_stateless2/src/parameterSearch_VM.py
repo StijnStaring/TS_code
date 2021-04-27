@@ -51,7 +51,6 @@ def run_parameter_setting(kwargs):
         outputs_model1 = dict()
         for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
             outputs_model1[method] = np.nan
-
         return history1, outputs_model1, indicator
 
     all_predictions, all_references = test_set_prediction(trained_model1, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)

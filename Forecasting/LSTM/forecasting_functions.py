@@ -75,9 +75,6 @@ class forecast_setting:
     def __str__(self):
         print(vars(self))
 
-
-
-
 class time_serie:
 
     def __init__(self, ts: pd.Series, av_temperature: pd.DataFrame):

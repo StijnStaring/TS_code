@@ -242,6 +242,13 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
         file_path = "model.h5"
         save_model(model, file_path)
 
+    if np.isnan(history.history["loss"][-1]):
+        print("Model 1 gave a nan value.")
+        history = np.nan
+        model = np.nan
+        indicator = np.nan
+        return model, history, indicator
+
     indicator = 1
     return model, history, indicator
 
