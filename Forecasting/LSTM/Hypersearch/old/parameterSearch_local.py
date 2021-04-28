@@ -56,9 +56,9 @@ if __name__ == "__main__":
     Stijn = True
 
     if Stijn:
-        path_history = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_series.csv"
-        path_temperature = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_temp_series.csv"
-        path_npy = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
+        path_history = "/data/DF_three_series.csv"
+        path_temperature = "/data/DF_three_temp_series.csv"
+        path_npy = "/VM_calculating_inputs_LSTM/output_arrays"
 
     else:
         path_history = ""
@@ -71,10 +71,10 @@ if __name__ == "__main__":
 
     print("Running this file on a PC with %s cores..." % (cpu_count()))
 
-    makedirs("./outputs", exist_ok=True)
-    output_path = "./outputs"
-    path_txt_file = './outputs/output_file.txt'
-    path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
+    makedirs("../local/outputs", exist_ok=True)
+    output_path = "../local/outputs"
+    path_txt_file = '../local/outputs/output_file.txt'
+    path_to_array = "/VM_calculating_inputs_LSTM/output_arrays"
 
     print("CSV files are loaded...")
 

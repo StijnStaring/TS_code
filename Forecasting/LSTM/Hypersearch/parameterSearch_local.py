@@ -27,54 +27,75 @@ class ParameterSearch:
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
         self.list_lag_value = [48, 96]
-        self.list_nb_epoch = [1]
+        self.list_nb_epoch = [2]
         self.list_activation = ['relu']
         self.list_batch_size_parameter = [48]
-        self.list_learning_rate = [10 ** -3, 10 ** -2, 10 ** -1]
+        self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
         self.list_shuffle = ['True']  # shuffling is set to True
         self.list_repeat = [3]  # four is chosen because have four cores
 
         assert self.list_patience[0] < self.list_nb_epoch[0]
 
-def run_parameter_setting(kwargs):
+def run_parameter_setting1(kwargs):
     print("Model 1 running...")
-    trained_model1, history1 = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
+    trained_model, history = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
 
-    all_predictions, all_references = test_set_prediction(trained_model1, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
     print("Model 1 prediction finished...")
-    outputs_model1 = dict()
+    outputs_model = dict()
     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
         output: float = Switcher(method, all_predictions, all_references)
-        outputs_model1[method] = output
+        outputs_model[method] = output
 
-    return history1, outputs_model1
+    return history, outputs_model
+
+def run_parameter_setting2(kwargs):
+    print("Model 2 running...")
+    trained_model, history = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
+
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
+    print("Model 2 prediction finished...")
+    outputs_model = dict()
+    for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+        output: float = Switcher(method, all_predictions, all_references)
+        outputs_model[method] = output
+
+    return history, outputs_model
 
 
 if __name__ == "__main__":
-
+    which_model = "model1_sl"
     Stijn = True
 
     if Stijn:
         path_history = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_series.csv"
         path_temperature = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_temp_series.csv"
-        path_npy = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
+        path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
 
     else:
         path_history = ""
         path_temperature = ""
-        path_npy = ""
+        path_to_array = ""
 
     fullYeardata = pd.read_csv(path_history,index_col= "date",parse_dates= True)
     names = fullYeardata.columns
     av_temperature = pd.read_csv(path_temperature,index_col="meter_id",parse_dates=True)
 
-    print("Running this file on a PC with %s cores..." % (cpu_count()))
 
-    makedirs("./outputs", exist_ok=True)
-    output_path = "./outputs"
-    path_txt_file = './outputs/output_file.txt'
-    path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
+    if which_model == "model1_sl":
+        makedirs("local/outputs", exist_ok=True)
+        output_path = "local/outputs"
+        path_txt_file = 'local/outputs/output_file.txt'
+    elif which_model == "model2_sl":
+        makedirs("local_stateless2/outputs", exist_ok=True)
+        output_path = "local_stateless2/outputs"
+        path_txt_file = 'local_stateless2/outputs/output_file.txt'
+
+    else:
+        output_path = ""
+        path_txt_file = ""
+
 
     print("CSV files are loaded...")
 
@@ -90,12 +111,11 @@ if __name__ == "__main__":
     with open(path_txt_file,"a") as txt_file:
         txt_file.write("Found %s sets of parameters.\n" % amount_of_possibilities)
 
-    which_model = ["model2_sl"]
+
     start_time_program = time()
     multithreading = False
     counter = 1
-    #change this!!
-    ##################
+
     for name in names:
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
@@ -157,10 +177,17 @@ if __name__ == "__main__":
                                     kernel_regularizer_DENSE = kernel_regularization_DENSE, bais_regularizer_DENSE = bais_regularization_DENSE, activity_regularizer_DENSE = activity_regularization_DENSE)
                                     logBook[str(setting_identification)] = [str(x) for x in list(vars(runner).values())]
                                     print("start iteration. \r\n")
+                                    history = None
+                                    outputs_model = None
 
                                     if multithreading:
+                                        training_results = None
                                         p = Pool(processes=cpu_count())
-                                        training_results = p.map(run_parameter_setting, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train, "verbose_para": 1,"save": False} for iteration in range(repeat)])
+                                        if which_model == "model1_sl":
+                                            training_results = p.map(run_parameter_setting1, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train, "verbose_para": 1,"save": False} for iteration in range(repeat)])
+                                        elif which_model == "model2_sl":
+                                            training_results = p.map(run_parameter_setting2, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train, "verbose_para": 1,"save": False} for iteration in range(repeat)])
+
                                         clear_session()
                                         reset_uids()
                                         collected_histories = [x[0] for x in training_results]
@@ -169,8 +196,14 @@ if __name__ == "__main__":
                                     else:
                                         collected_histories = []
                                         collected_outputs = []
+
                                         for iteration in range(repeat):
-                                            history,outputs_model = run_parameter_setting({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False})
+                                            if which_model == "model1_sl":
+                                                history,outputs_model = run_parameter_setting1({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False})
+                                            elif which_model == "model2_sl":
+                                                history, outputs_model = run_parameter_setting2(
+                                                    {"setting": runner, "ts": ts, "X": X_train, "y": y_train,
+                                                     "verbose_para": 1, "save": False})
                                             collected_histories.append(history)
                                             collected_outputs.append(outputs_model)
                                             clear_session()
@@ -178,8 +211,8 @@ if __name__ == "__main__":
                                     with open(path_txt_file,"a") as txt_file:
                                         print(20 * "*" + "\r\n")
                                         txt_file.write(20 * "*" + "\r\n")
-                                        print("This is model: %s. \r\n"%which_model[0])
-                                        txt_file.write("This is model: %s. \r\n" % which_model[0])
+                                        print("This is model: %s. \r\n"%which_model)
+                                        txt_file.write("This is model: %s. \r\n" % which_model)
                                         print("This is setting identifier %s \r\n" % setting_identification)
                                         txt_file.write("This is setting identifier %s \r\n" % setting_identification)
                                         print(20*"*" + "\r\n")
@@ -216,11 +249,11 @@ if __name__ == "__main__":
                                     setting_identification += 1
                                     counter += 1
 
-        error_csv_path = path.join(output_path,"error_" +which_model[0] + "_" +  name + ".csv")
+        error_csv_path = path.join(output_path,"error_" +which_model + "_" +  name + ".csv")
         error.to_csv(error_csv_path)
-        logBook_csv_path = path.join(output_path, "logbook_" + which_model[0] + "_"+ name + ".csv")
+        logBook_csv_path = path.join(output_path, "logbook_" + which_model + "_"+ name + ".csv")
         logBook.to_csv(logBook_csv_path)
-        training_result_csv_path = path.join(output_path, "training_result_" + which_model[0] + "_" + name + ".csv")
+        training_result_csv_path = path.join(output_path, "training_result_" + which_model + "_" + name + ".csv")
         training_result.to_csv(training_result_csv_path)
         end_time_program = time()
         with open(path_txt_file, "a") as txt_file:

@@ -180,7 +180,8 @@ def build_model_stateless1(setting: forecast_setting, X, y, verbose_para: int = 
     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
     try:
-        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_split=0.10,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+        # The validation is removed during the parameter search --> This has to be added again when parameters are chosen.
+        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
     except:
         print("Training of Model 1 went wrong --> try again")
         model, history = build_model_stateless1(setting, X, y, verbose_para = 1, save = False)
@@ -228,10 +229,10 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
         model.fit(x=X, y=y, epochs=setting.nb_epoch, shuffle=setting.shuffle, batch_size=setting.batch_size_parameter,
               callbacks=[early_stopping_monitor, history], verbose=verbose_para)
     except:
-        print("Training of Model 1 went wrong --> try again")
-        model, history = build_model_stateless1(setting, X, y, verbose_para = 1, save = False)
+        print("Training of Model 2 went wrong --> try again")
+        model, history = build_model_stateless2(setting, X, y, verbose_para = 1, save = False)
     else:
-        print("Model 1 training has finished...")
+        print("Model 2 training has finished...")
 
     # save the trained_model
     if save:
@@ -239,8 +240,8 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
         save_model(model, file_path)
 
     if np.isnan(history.history["loss"][-1]):
-        print("Training of Model 1 has loss nan --> try again")
-        model, history = build_model_stateless1(setting, X, y, verbose_para=1, save=False)
+        print("Training of Model 2 has loss nan --> try again")
+        model, history = build_model_stateless2(setting, X, y, verbose_para=1, save=False)
 
     return model, history
 
