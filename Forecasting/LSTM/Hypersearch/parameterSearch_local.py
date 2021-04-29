@@ -11,8 +11,8 @@ from keras.backend import clear_session, reset_uids
 # first stage --> regularization off
 class ParameterSearch:
     def __init__(self):
-        self.list_units_LSTM = [20, 50]
-        self.list_layers_LSTM = [1, 3]
+        self.list_units_LSTM = [20]
+        self.list_layers_LSTM = [1]
         self.list_dropout_LSTM = [0]
         self.list_recurrent_dropout_LSTM = [0]
         self.list_kernel_regularization_LSTM = [None]
@@ -26,11 +26,11 @@ class ParameterSearch:
         self.list_kernel_regularization_DENSE = [None]
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
-        self.list_lag_value = [48, 96]
+        self.list_lag_value = [96]
         self.list_nb_epoch = [2]
-        self.list_activation = ['relu']
+        self.list_activation = ['relu'] # found that an activation function of relu gives bad results
         self.list_batch_size_parameter = [48]
-        self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
+        self.list_learning_rate = [10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
         self.list_shuffle = ['True']  # shuffling is set to True
         self.list_repeat = [3]  # four is chosen because have four cores
@@ -42,6 +42,7 @@ def run_parameter_setting1(kwargs):
     trained_model, history = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
 
     all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
+    show_all_forecasts(all_predictions, all_references, "nameless", False)
     print("Model 1 prediction finished...")
     outputs_model = dict()
     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
@@ -53,8 +54,8 @@ def run_parameter_setting1(kwargs):
 def run_parameter_setting2(kwargs):
     print("Model 2 running...")
     trained_model, history = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-
     all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
+
     print("Model 2 prediction finished...")
     outputs_model = dict()
     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:

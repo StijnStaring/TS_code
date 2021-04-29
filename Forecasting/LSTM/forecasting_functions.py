@@ -521,7 +521,7 @@ def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: 
 
 def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = True):
     collection = get_all_days_of_year(all_predictions)
-    for day_int in collection:
+    for day_int in collection[0:1]:
         predictions = all_predictions[all_predictions.index.dayofyear == day_int]
         references = all_references[all_references.index.dayofyear == day_int]
         show_forecast(predictions, references, ID, str(day_int), save)

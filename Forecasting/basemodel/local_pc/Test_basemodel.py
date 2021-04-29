@@ -90,3 +90,5 @@ for col_name in fullYeardata.columns:
 
 print(100*"#")
 print("All the series are trained and evaluated!")
+
+
