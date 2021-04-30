@@ -12,6 +12,8 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import casadi as ca
+# import warnings as wn
+# wn.filterwarnings(action='ignore')
 
 plt.rc('axes', linewidth=2)
 plt.rc('axes', labelsize= 16)
@@ -21,23 +23,24 @@ plt.rc('xtick', labelsize=16)
 plt.rc('ytick', labelsize=16)
 plt.rc('figure',figsize=(10,8))
 
-def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=18,fontsize_axis=16,fontsize_legend=14,fontsize_ticks=16,grid:bool = False):
 
-    plt.figure(figsize=figsize)
-    ax1 = plt.gca()
-    plt.rc('legend',fontsize=fontsize_legend)
-    plt.title(titel, fontsize=fontsize_titel, fontweight = 'bold')
-    plt.grid(grid)
-    plt.xlabel(xlabel, fontsize=fontsize_axis)
-    plt.ylabel(ylabel, fontsize=fontsize_axis)
-    for tick in ax1.xaxis.get_major_ticks():
-            tick.label1.set_fontsize(fontsize_ticks)
-    #         tick.label1.set_fontweight('bold')
-    for tick in ax1.yaxis.get_major_ticks():
-        tick.label1.set_fontsize(fontsize_ticks)
-    #     tick.label1.set_fontweight('bold')
-
-    return ax1
+# def figure_layout(figsize=(10, 8), titel="", xlabel="", ylabel="", fontsize_titel=22, fontsize_axis=22, fontsize_legend=22, fontsize_ticks=20, grid: bool = False):
+#
+#     plt.figure(figsize=figsize)
+#     ax1 = plt.gca()
+#     plt.rc('legend',fontsize=fontsize_legend)
+#     plt.title(titel, fontsize=fontsize_titel, fontweight = 'bold')
+#     plt.grid(grid)
+#     plt.xlabel(xlabel, fontsize=fontsize_axis)
+#     plt.ylabel(ylabel, fontsize=fontsize_axis)
+#     for tick in ax1.xaxis.get_major_ticks():
+#             tick.label1.set_fontsize(fontsize_ticks)
+#     #         tick.label1.set_fontweight('bold')
+#     for tick in ax1.yaxis.get_major_ticks():
+#         tick.label1.set_fontsize(fontsize_ticks)
+#     #     tick.label1.set_fontweight('bold')
+#
+#     return ax1
 
 # The model will not always produce an output --> can be that the previous day is not known
 def base_model_week_before(test_dates: pd.DatetimeIndex,serie: pd.Series,amount_days:int = 7):
@@ -66,6 +69,8 @@ class EnglandAndWalesHolidayCalendar(AbstractHolidayCalendar):
         Holiday('Boxing Day',
                 month=12, day=26, observance=next_monday_or_tuesday)
     ]
+
+
 
 def norm(serie: pd.Series):
     values = serie.values
@@ -275,8 +280,20 @@ def autolabel(rects,ax):
                 '%s' % np.around(height,4),
                 ha='center', va='bottom', fontweight='bold',fontsize=16)
 
-
-
+# from forecasting_functions import figure_layout
+# def create_barplot(titels: list, values: list, fig_titel:str, save:bool = False):
+#     assert len(titels) == len(values)
+#     axis = figure_layout(figsize=(18, 12), titel=fig_titel, grid=False)
+#     # axis.grid(axis='x')
+#     rects = axis.bar(titels, values, color='maroon', width=0.4)
+#     autolabel(rects, axis)
+#
+#     fname = save_to + "Serie"+str(col_name) + "_" + method + "_basemodel.png"
+#     plt.savefig(fname, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None,
+#                 transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
+#
+#
+#
 
 
 

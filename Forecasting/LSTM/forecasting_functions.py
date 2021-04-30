@@ -521,10 +521,11 @@ def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: 
 
 def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = True):
     collection = get_all_days_of_year(all_predictions)
-    for day_int in collection[0:1]:
+    for day_int in collection:
         predictions = all_predictions[all_predictions.index.dayofyear == day_int]
         references = all_references[all_references.index.dayofyear == day_int]
         show_forecast(predictions, references, ID, str(day_int), save)
+        break
     plt.show()
 
 def unison_shuffled_copies(a, b):

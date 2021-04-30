@@ -75,9 +75,6 @@ class forecast_setting:
     def __str__(self):
         print(vars(self))
 
-
-
-
 class time_serie:
 
     def __init__(self, ts: pd.Series, av_temperature: pd.DataFrame):
@@ -183,25 +180,26 @@ def build_model_stateless1(setting: forecast_setting, X, y, verbose_para: int = 
     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
     try:
-        # There is no validation set used --> split validation is removed!!
+        # The validation is removed during the parameter search --> This has to be added again when parameters are chosen.
         model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
     except:
         print("Training of Model 1 went wrong --> try again")
-        history = History()
-        history.history["loss"].append(np.nan)
-        model = np.nan
-        return model, history
+        model, history = build_model_stateless1(setting, X, y, verbose_para = 1, save = False)
     else:
-        print("Model 1 training has finished...")
+        print("Model 1 training_finished...")
     # save the trained_model
     if save:
         file_path = "model.h5"
         save_model(model,file_path)
 
+    if np.isnan(history.history["loss"][-1]):
+        print("Training of Model 1 has loss nan --> try again")
+        model, history = build_model_stateless1(setting, X, y, verbose_para=1, save=False)
+
     return model,history
 
 
-def build_model_stateless2(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False):
+def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False):
     """
     The model adds a flatten layer after the output of the last LSTM layer which outputs a matrix that is made of the different vectors at each timestep.
     """
@@ -226,13 +224,24 @@ def build_model_stateless2(setting: forecast_setting, X, y, X_val, y_val, verbos
                     activity_regularizer=setting.activity_regularizer_DENSE))
     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999), loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
-    model.fit(x=X, y=y, epochs=setting.nb_epoch, shuffle=setting.shuffle, batch_size=setting.batch_size_parameter,
-              validation_data=(X_val, y_val), callbacks=[early_stopping_monitor, history], verbose=verbose_para)
-    # save the trained_model
+    # validation is removed!! This should be changed when not doing parameter search
+    try:
+        model.fit(x=X, y=y, epochs=setting.nb_epoch, shuffle=setting.shuffle, batch_size=setting.batch_size_parameter,
+              callbacks=[early_stopping_monitor, history], verbose=verbose_para)
+    except:
+        print("Training of Model 2 went wrong --> try again")
+        model, history = build_model_stateless2(setting, X, y, verbose_para = 1, save = False)
+    else:
+        print("Model 2 training has finished...")
 
+    # save the trained_model
     if save:
         file_path = "model.h5"
         save_model(model, file_path)
+
+    if np.isnan(history.history["loss"][-1]):
+        print("Training of Model 2 has loss nan --> try again")
+        model, history = build_model_stateless2(setting, X, y, verbose_para=1, save=False)
 
     return model, history
 
@@ -295,6 +304,8 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
     if save:
         file_path = "model.h5"
         save_model(model,file_path)
+
+
 
     return model,history
 
@@ -514,6 +525,7 @@ def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = Tru
         predictions = all_predictions[all_predictions.index.dayofyear == day_int]
         references = all_references[all_references.index.dayofyear == day_int]
         show_forecast(predictions, references, ID, str(day_int), save)
+        break
     plt.show()
 
 def unison_shuffled_copies(a, b):

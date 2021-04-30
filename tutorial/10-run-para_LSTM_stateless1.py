@@ -3,10 +3,11 @@ from azureml.core import Experiment
 from azureml.core import Environment
 from azureml.core import ScriptRunConfig
 from azureml.core import Dataset
+from time import time
 
 if __name__ == "__main__":
     ws = Workspace.from_config()
-    experiment = Experiment(workspace=ws, name='Para_Stateless1')
+    experiment = Experiment(workspace=ws, name='Para_Stateless1_phase2')
     datastore = ws.get_default_datastore()
     dataset = Dataset.File.from_files(path=(datastore, 'datasets/three_series'))
 
@@ -39,7 +40,8 @@ if __name__ == "__main__":
     # downloading the files
     import os
     project_folder = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\Hypersearch\VM_parametersearch_stateless1"
-    outputs_path = os.path.join(project_folder, "outputs")
+    name = str(time())
+    outputs_path = os.path.join(project_folder, name)
     os.makedirs(outputs_path, exist_ok=True)
 
     for filename in run.get_file_names():

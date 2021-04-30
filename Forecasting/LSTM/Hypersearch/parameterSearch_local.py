@@ -13,7 +13,7 @@ class ParameterSearch:
     def __init__(self):
         self.list_units_LSTM = [20]
         self.list_layers_LSTM = [1]
-        self.list_dropout_LSTM = [0]
+        self.list_dropout_LSTM = [0.5]
         self.list_recurrent_dropout_LSTM = [0]
         self.list_kernel_regularization_LSTM = [None]
         self.list_recurrent_regularization_LSTM = [None]
