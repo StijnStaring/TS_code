@@ -131,29 +131,29 @@ if __name__ == "__main__":
     start_time_program = time()
     multithreading = False
     counter = 1
-    regulation_para = [10**-2, 10**-3, 10**-4,10**-5]
-    # dropout_para = [0.2,0.3,0.4,0.5]
+    # regulation_para = [10**-2, 10**-3, 10**-4,10**-5]
+    dropout_para = [0.2,0.3,0.4,0.5] # from original paper that suggested to use values between 0.2 and 0.5
     for name in names:
         if name == '0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e':
             chosen_parameters.list_lag_value = [96]
             chosen_parameters.list_learning_rate = [0.01]
-            chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            # chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            chosen_parameters.list_dropout_LSTM = dropout_para
+            # chosen_parameters.list_recurrent_dropout_LSTM = dropout_para
+            # chosen_parameters.list_dropout_DENSE = dropout_para
 
         elif name == '0x1e84e4d5cf1f463147f3e4d566167597423d7769':
             chosen_parameters.list_lag_value = [96]
             chosen_parameters.list_learning_rate = [0.0001]
-            chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            # chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            chosen_parameters.list_dropout_LSTM = dropout_para
+            # chosen_parameters.list_recurrent_dropout_LSTM = dropout_para
+            # chosen_parameters.list_dropout_DENSE = dropout_para
 
         elif name == '0xc3b2f61a72e188cfd44483fce1bc11d6a628766d':
             chosen_parameters.list_lag_value = [48]
             chosen_parameters.list_learning_rate = [0.0001]
-            chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            # chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            chosen_parameters.list_dropout_LSTM = dropout_para
+            # chosen_parameters.list_recurrent_dropout_LSTM = dropout_para
+            # chosen_parameters.list_dropout_DENSE = dropout_para
 
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
@@ -170,6 +170,10 @@ if __name__ == "__main__":
             X_train = np.load(path_X_train)
             path_y_train = path.join(args.data_path, "y_" + name + "_" + str(lag_value) + ".npy")
             y_train = np.load(path_y_train)
+            print(np.isnan(X_train).sum())
+            print(np.isnan(y_train).sum())
+            if np.isnan(X_train).sum() + np.isnan(y_train).sum() != 0:
+                raise Exception("Wrong")
             # take the last 10 days of November as validation for the parameter search
             X_train = X_train[:-480]
             y_train = y_train[:-480]

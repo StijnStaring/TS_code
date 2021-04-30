@@ -1,0 +1,168 @@
+Running this file on a PC with 4 cores...
+Found 1 sets of parameters.
+********************
+This is model: model1_sl. 
+This is setting identifier 1 
+********************
+Run: 1 
+loss: [0.010623147980142269, 0.009579813075309723] 
+Run: 2 
+loss: [12275009.204661995, 0.011217250034967957] 
+Run: 3 
+loss: [0.010608869440266457, 0.009533116240372523] 
+Working on Serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
+Setting 1/1 is completed
+The elapsed time to calculate one parameter is: 15.135325109958648 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 2 
+********************
+Run: 1 
+loss: [0.010974940940772431, 0.009776489972570761] 
+Run: 2 
+loss: [0.011290853634846876, 0.009870747812179073] 
+Run: 3 
+loss: [0.010708909913078992, 0.009648621585928713] 
+Working on Serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
+Setting 2/1 is completed
+The elapsed time to calculate one parameter is: 21.04872201283773 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 3 
+********************
+Run: 1 
+loss: [0.011506617898974706, 0.00994028198324514] 
+Run: 2 
+loss: [0.011332735779003952, 0.010060061782349757] 
+Run: 3 
+loss: [0.012346623141480528, 0.012093283411734362] 
+Working on Serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
+Setting 3/1 is completed
+The elapsed time to calculate one parameter is: 20.224460025628407 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 4 
+********************
+Run: 1 
+loss: [0.01158076775244362, 0.010293234629203675] 
+Run: 2 
+loss: [0.012160747410347743, 0.010300758323684243] 
+Run: 3 
+loss: [178.67772078900728, 0.011375736701880692] 
+Working on Serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
+Setting 4/1 is completed
+The elapsed time to calculate one parameter is: 17.613527683417 minutes
+####################################################################################################
+Completed Serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e...
+####################################################################################################
+The program ran for 74.12041979630789 minutes.********************
+This is model: model1_sl. 
+This is setting identifier 1 
+********************
+Run: 1 
+loss: [0.002928267514079329, 0.002725853468381846] 
+Run: 2 
+loss: [0.002984271263118012, 0.002716693197364734] 
+Run: 3 
+loss: [0.003053821765319502, 0.002798531750881949] 
+Working on Serie: 0x1e84e4d5cf1f463147f3e4d566167597423d7769.
+Setting 1/1 is completed
+The elapsed time to calculate one parameter is: 13.997347780068715 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 2 
+********************
+Run: 1 
+loss: [0.0030604375271243768, 0.0027846452720956412] 
+Run: 2 
+loss: [0.0030081962337044953, 0.0027568496373064112] 
+Run: 3 
+loss: [0.003060889611926699, 0.0028163233231601266] 
+Working on Serie: 0x1e84e4d5cf1f463147f3e4d566167597423d7769.
+Setting 2/1 is completed
+The elapsed time to calculate one parameter is: 13.552495209376017 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 3 
+********************
+Run: 1 
+loss: [0.003140053711560416, 0.002868154190385986] 
+Run: 2 
+loss: [0.0031252546985749362, 0.0028664520081213636] 
+Run: 3 
+loss: [0.003105966788329768, 0.002833516193627559] 
+Working on Serie: 0x1e84e4d5cf1f463147f3e4d566167597423d7769.
+Setting 3/1 is completed
+The elapsed time to calculate one parameter is: 13.419278462727865 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 4 
+********************
+Run: 1 
+loss: [0.0031397469690277804, 0.0029060023006880426] 
+Run: 2 
+loss: [0.0031960455808131985, 0.002971200811856004] 
+Run: 3 
+loss: [0.0031315540282600934, 0.0028868312323798557] 
+Working on Serie: 0x1e84e4d5cf1f463147f3e4d566167597423d7769.
+Setting 4/1 is completed
+The elapsed time to calculate one parameter is: 12.931220010916393 minutes
+####################################################################################################
+Completed Serie: 0x1e84e4d5cf1f463147f3e4d566167597423d7769...
+####################################################################################################
+The program ran for 128.04493770599365 minutes.********************
+This is model: model1_sl. 
+This is setting identifier 1 
+********************
+Run: 1 
+loss: [0.007341809991758675, 0.005780235044088722] 
+Run: 2 
+loss: [0.007154575679177309, 0.00561993799749733] 
+Run: 3 
+loss: [0.007433043888354841, 0.005942293384037451] 
+Working on Serie: 0xc3b2f61a72e188cfd44483fce1bc11d6a628766d.
+Setting 1/1 is completed
+The elapsed time to calculate one parameter is: 6.739308750629425 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 2 
+********************
+Run: 1 
+loss: [0.007534064460998464, 0.005966087491842615] 
+Run: 2 
+loss: [0.007231926098941672, 0.005808320875177246] 
+Run: 3 
+loss: [0.0070677553514384844, 0.005725840375659232] 
+Working on Serie: 0xc3b2f61a72e188cfd44483fce1bc11d6a628766d.
+Setting 2/1 is completed
+The elapsed time to calculate one parameter is: 6.826860924561818 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 3 
+********************
+Run: 1 
+loss: [0.007316290704755476, 0.006017925682147509] 
+Run: 2 
+loss: [0.00732319508448543, 0.005878852466597069] 
+Run: 3 
+loss: [0.007308033364356406, 0.005860881446882356] 
+Working on Serie: 0xc3b2f61a72e188cfd44483fce1bc11d6a628766d.
+Setting 3/1 is completed
+The elapsed time to calculate one parameter is: 6.717439504464467 minutes
+********************
+This is model: model1_sl. 
+This is setting identifier 4 
+********************
+Run: 1 
+loss: [0.007863731698735672, 0.006464456705428406] 
+Run: 2 
+loss: [0.007758797010682212, 0.006425124898353943] 
+Run: 3 
+loss: [0.007723882468561455, 0.006389823864032471] 
+Working on Serie: 0xc3b2f61a72e188cfd44483fce1bc11d6a628766d.
+Setting 4/1 is completed
+The elapsed time to calculate one parameter is: 5.307639364401499 minutes
+####################################################################################################
+Completed Serie: 0xc3b2f61a72e188cfd44483fce1bc11d6a628766d...
+####################################################################################################
+The program ran for 153.7253499706586 minutes.

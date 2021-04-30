@@ -29,11 +29,7 @@ just the difference between the values
 """
 
 
-
-
 from forecasting_functions import *
-
-
 
 # importing the data
 Stijn = True
@@ -44,6 +40,7 @@ if Stijn:
     av_temperaturepath = "D:\Onedrive\Leuven\Final project\data\weather-avg.csv"
 else:
     raise Exception("Put some paths here.")
+
 fullYeardata = pd.read_csv(fullYearpath,index_col= "date",parse_dates= True)
 av_temperature = pd.read_csv(av_temperaturepath,index_col='meter_id')
 av_temperature = av_temperature.transpose()
@@ -74,13 +71,6 @@ axis1.plot(np.arange(len(y)+len(y_val)+1,len(y)+len(y_val)+1+len(time_serie1.tes
 # fname = path+"division_data" + ".png"
 # plt.savefig(fname, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None,
 #             transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
-
-
-
-
-X.shape
-
-
 
 
 trained_model, history = build_model_stateless2(setting1, X,y, X_val, y_val)

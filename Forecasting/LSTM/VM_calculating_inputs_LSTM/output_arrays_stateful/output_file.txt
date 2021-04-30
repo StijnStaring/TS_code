@@ -1,0 +1,25 @@
+This file contains the results of the calculated data.
+Running is started...
+Starting new serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e.
+****************************************************************************************************
+----------------------------------------------------------------------------------------------------
+lag_value: 1 
+The function call for Serie: 0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e and lag value 1 took 13.138792276382446 seconds --> 0.21897987127304078 minutes
+.The dimensions of X_train: (16031, 1, 59).
+The dimensions of y_train: (16031, 1).
+Starting new serie: 0x1e84e4d5cf1f463147f3e4d566167597423d7769.
+****************************************************************************************************
+----------------------------------------------------------------------------------------------------
+lag_value: 1 
+The function call for Serie: 0x1e84e4d5cf1f463147f3e4d566167597423d7769 and lag value 1 took 12.655885457992554 seconds --> 0.2109314242998759 minutes
+.The dimensions of X_train: (16031, 1, 59).
+The dimensions of y_train: (16031, 1).
+Starting new serie: 0xc3b2f61a72e188cfd44483fce1bc11d6a628766d.
+****************************************************************************************************
+----------------------------------------------------------------------------------------------------
+lag_value: 1 
+The function call for Serie: 0xc3b2f61a72e188cfd44483fce1bc11d6a628766d and lag value 1 took 15.406460285186768 seconds --> 0.2567743380864461 minutes
+.The dimensions of X_train: (16031, 1, 59).
+The dimensions of y_train: (16031, 1).
+
+The program ran for 0.7431326230367025 minutes.
