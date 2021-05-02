@@ -71,7 +71,7 @@ def run_parameter_setting2(kwargs):
 
 
 if __name__ == "__main__":
-    which_model = "model2_sl"
+    which_model = "model1_sl"
     Stijn = True
 
     if Stijn:
@@ -125,19 +125,20 @@ if __name__ == "__main__":
     for name in names:
         if name == '0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e':
             chosen_parameters = ParameterSearch()
+            chosen_parameters.list_units_LSTM = [20]
+            chosen_parameterslist_layers_LSTM = [1]
             chosen_parameters.list_lag_value = [96]
             chosen_parameters.list_learning_rate = learning_rates
-            chosen_parameters.list_kernel_regularization_LSTM = [10**-5]
 
         elif name == '0x1e84e4d5cf1f463147f3e4d566167597423d7769':
             chosen_parameters = ParameterSearch()
-            chosen_parameters.list_lag_value = [48]
+            chosen_parameters.list_lag_value = [96]
             chosen_parameters.list_learning_rate = learning_rates
-            chosen_parameters.list_kernel_regularization_LSTM = [10**-3]
+            chosen_parameters.list_dropout_LSTM = [0.2]
 
         elif name == '0xc3b2f61a72e188cfd44483fce1bc11d6a628766d':
             chosen_parameters = ParameterSearch()
-            chosen_parameters.list_lag_value = [96]
+            chosen_parameters.list_lag_value = [48]
             chosen_parameters.list_learning_rate = learning_rates
             chosen_parameters.list_dropout_DENSE = [0.4]
 
