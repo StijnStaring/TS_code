@@ -16,7 +16,7 @@ from local_pc.Test_basemodel_functions import Switcher
 class forecast_setting:
 
     def __init__(self, units_LSTM = 20, layers_LSTM = 1, units_DENSE = 20, layers_DENSE= 1, patience = 5,
-                 shuffle = False, lag_value = 3, nb_epoch = 1, batch_size_para = 32,
+                 shuffle = False, lag_value = 3, nb_epoch = 1, batch_size_para = 48,
                  repeat = 10, activation: str = 'relu', learning_rate: float = 0.001, dropout_LSTM = 0, recurrent_dropout_LSTM = 0, kernel_regularizer_LSTM = None,
                  recurrent_regularizer_LSTM = None, bais_regularizer_LSTM = None, activity_regularizer_LSTM = None, dropout_DENSE = 0,
                  kernel_regularizer_DENSE = None, bais_regularizer_DENSE = None, activity_regularizer_DENSE = None):
@@ -159,6 +159,7 @@ def build_model_stateless1(setting: forecast_setting, X, y, verbose_para: int = 
     This model doesn't expects a pre-made validation set.
     The validation split is set on 10%.
     """
+    print("Warning: the validation set is turned off.")
     history = History()
     model = Sequential()
 
@@ -203,6 +204,7 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
     """
     The model adds a flatten layer after the output of the last LSTM layer which outputs a matrix that is made of the different vectors at each timestep.
     """
+    print("Warning: the validation set is turned off.")
     history = History()
     model = Sequential()
 
@@ -224,7 +226,7 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
                     activity_regularizer=setting.activity_regularizer_DENSE))
     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999), loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
-    # validation is removed!! This should be changed when not doing parameter search
+    # validation is removed!! This should be changed when not doing parameter search --> use 10% for early stopping
     try:
         model.fit(x=X, y=y, epochs=setting.nb_epoch, shuffle=setting.shuffle, batch_size=setting.batch_size_parameter,
               callbacks=[early_stopping_monitor, history], verbose=verbose_para)
@@ -245,11 +247,11 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
 
     return model, history
 
-def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True):
-
+def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True, X_val = None, y_val = None):
+    print("Warning: the validation set is turned off --> activate by putting it in the fit function.")
+    assert setting.shuffle == False
+    assert reset_after_epoch == True
     history = History()
-    model = None
-    weights = None
     loss = []
     val_loss = []
     tracking = [np.inf]
@@ -258,14 +260,13 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
             batch_size = setting.batch_size_parameter
         else:
             batch_size = 1
-        model = Sequential()
 
+        model = Sequential()
         if setting.layers_LSTM == 1:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))  # no need to specify the batch size when stateless
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
         else:
             model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
             for _ in np.arange(1, setting.layers_LSTM - 1):
-
                 model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
             model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
 
@@ -278,22 +279,30 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
         early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
         if i == 0:
             for k in range(setting.nb_epoch):
-                model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,validation_data=(X_val,y_val),callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+                # try:
+                model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+                # except:
+                    # raise Exception("Training of stateful model went wrong --> stop")
                 epoch_count = k+1
                 print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
+                if np.isnan(history.history['loss'][0]):
+                    print("The loss became nan --> try again.")
+                    model, history = build_model_stateful1(setting, X, y, X_val, y_val, verbose_para, save = False, reset_after_epoch = True)
                 loss.append(history.history['loss'][0])
-                current_val_lost = history.history['val_loss'][0]
-                val_loss.append(current_val_lost)
+                if X_val is not None and y_val is not None:
+                    current_val_lost = history.history['val_loss'][0]
+                    val_loss.append(current_val_lost)
 
-                if current_val_lost < tracking[0]:
-                    weights = model.get_weights()
-                    tracking = [current_val_lost]
-                else:
-                    tracking.append(current_val_lost)
-                    if len(tracking) == setting.patience + 1:
-                        break
+                    if current_val_lost < tracking[0]:
+                        weights = model.get_weights()
+                        tracking = [current_val_lost]
+                    else:
+                        tracking.append(current_val_lost)
+                        if len(tracking) == setting.patience + 1:
+                            break
                 if reset_after_epoch:
                     model.reset_states()
+
         else:
             # Now the batch size is changed to one
             model.set_weights(weights)
@@ -304,8 +313,6 @@ def build_model_stateful1(setting: forecast_setting, X, y, X_val, y_val, verbose
     if save:
         file_path = "model.h5"
         save_model(model,file_path)
-
-
 
     return model,history
 
@@ -372,7 +379,7 @@ def get_performance(all_predictions: pd.Series, all_references: pd.Series, metri
     return Switcher(metric, all_predictions, all_references)
 
 plt.rc('axes', linewidth=2)
-def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=22,fontsize_axis=22,fontsize_legend=22,fontsize_ticks=20,grid:bool = False, dpi = 100,get_figure = False):
+def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=26,fontsize_axis=26,fontsize_legend=26,fontsize_ticks=26,grid:bool = False, dpi = 100,get_figure = False):
 
     plt.figure(figsize=figsize, dpi= dpi)
     ax1 = plt.gca()
