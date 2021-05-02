@@ -121,29 +121,25 @@ if __name__ == "__main__":
     start_time_program = time()
     multithreading = False
     counter = 1
-    regulation_para = [10**-2, 10**-3, 10**-4,10**-5]
-    # dropout_para = [0.2,0.3,0.4,0.5]
+    learning_rates = [5**10-2,10**-2, 5*10**-3, 2*10**-3, 10**-3, 10**-4, 10**-5, 10**-6]
     for name in names:
         if name == '0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e':
+            chosen_parameters = ParameterSearch()
             chosen_parameters.list_lag_value = [96]
-            chosen_parameters.list_learning_rate = [0.001]
-            # chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            chosen_parameters.list_learning_rate = learning_rates
+            chosen_parameters.list_kernel_regularization_LSTM = [10**-5]
 
         elif name == '0x1e84e4d5cf1f463147f3e4d566167597423d7769':
+            chosen_parameters = ParameterSearch()
             chosen_parameters.list_lag_value = [48]
-            chosen_parameters.list_learning_rate = [0.0001]
-            # chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            chosen_parameters.list_learning_rate = learning_rates
+            chosen_parameters.list_kernel_regularization_LSTM = [10**-3]
 
         elif name == '0xc3b2f61a72e188cfd44483fce1bc11d6a628766d':
+            chosen_parameters = ParameterSearch()
             chosen_parameters.list_lag_value = [96]
-            chosen_parameters.list_learning_rate = [0.001]
-            # chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            chosen_parameters.list_learning_rate = learning_rates
+            chosen_parameters.list_dropout_DENSE = [0.4]
 
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())

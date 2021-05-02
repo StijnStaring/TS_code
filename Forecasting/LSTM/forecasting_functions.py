@@ -372,7 +372,7 @@ def get_performance(all_predictions: pd.Series, all_references: pd.Series, metri
     return Switcher(metric, all_predictions, all_references)
 
 plt.rc('axes', linewidth=2)
-def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=22,fontsize_axis=22,fontsize_legend=22,fontsize_ticks=20,grid:bool = False, dpi = 100):
+def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=22,fontsize_axis=22,fontsize_legend=22,fontsize_ticks=20,grid:bool = False, dpi = 100,get_figure = False):
 
     plt.figure(figsize=figsize, dpi= dpi)
     ax1 = plt.gca()
@@ -385,6 +385,10 @@ def figure_layout(figsize=(10,8),titel="",xlabel="",ylabel="",fontsize_titel=22,
             tick.label1.set_fontsize(fontsize_ticks)
     for tick in ax1.yaxis.get_major_ticks():
         tick.label1.set_fontsize(fontsize_ticks)
+
+    if get_figure:
+        fig = plt.gcf()
+        return ax1, fig
 
     return ax1
 
