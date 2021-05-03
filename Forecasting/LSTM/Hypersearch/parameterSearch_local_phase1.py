@@ -11,9 +11,9 @@ from keras.backend import clear_session, reset_uids
 # first stage --> regularization off
 class ParameterSearch:
     def __init__(self):
-        self.list_units_LSTM = [20]
-        self.list_layers_LSTM = [1]
-        self.list_dropout_LSTM = [0.5]
+        self.list_units_LSTM = [20,50]
+        self.list_layers_LSTM = [1,3]
+        self.list_dropout_LSTM = [0]
         self.list_recurrent_dropout_LSTM = [0]
         self.list_kernel_regularization_LSTM = [None]
         self.list_recurrent_regularization_LSTM = [None]
@@ -26,13 +26,13 @@ class ParameterSearch:
         self.list_kernel_regularization_DENSE = [None]
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
-        self.list_lag_value = [96]
-        self.list_nb_epoch = [2]
+        self.list_lag_value = [1]
+        self.list_nb_epoch = [10]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
         self.list_batch_size_parameter = [48]
-        self.list_learning_rate = [10 ** -2] # found that 10**-1 gave instable results
+        self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
-        self.list_shuffle = ['True']  # shuffling is set to True
+        self.list_shuffle = ['False']  # shuffling is set to True only when stateless
         self.list_repeat = [3]  # four is chosen because have four cores
 
         assert self.list_patience[0] < self.list_nb_epoch[0]
@@ -41,8 +41,8 @@ def run_parameter_setting1(kwargs):
     print("Model 1 running...")
     trained_model, history = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
 
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], True, False)
-    show_all_forecasts(all_predictions, all_references, "nameless", False)
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, None, True, False)
+    # show_all_forecasts(all_predictions, all_references, "nameless", False)
     print("Model 1 prediction finished...")
     outputs_model = dict()
     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
@@ -54,7 +54,7 @@ def run_parameter_setting1(kwargs):
 def run_parameter_setting2(kwargs):
     print("Model 2 running...")
     trained_model, history = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], True, False)
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, None, True, False)
 
     print("Model 2 prediction finished...")
     outputs_model = dict()
@@ -78,7 +78,7 @@ def run_parameter_setting3(kwargs):
 
 
 if __name__ == "__main__":
-    which_model = "model1_sl"
+    which_model = "model3_sf"
     Stijn = True
 
     if Stijn:
@@ -105,6 +105,10 @@ if __name__ == "__main__":
         output_path = "local_stateless2/outputs"
         path_txt_file = 'local_stateless2/outputs/output_file.txt'
 
+    elif which_model == "model3_sf":
+        makedirs("local_stateful3/outputs", exist_ok= True)
+        output_path = "local_stateful3/outputs"
+        path_txt_file = 'local_stateful3/outputs/output_file.txt'
     else:
         output_path = ""
         path_txt_file = ""
@@ -153,6 +157,10 @@ if __name__ == "__main__":
             X_train = X_train[:-480]
             y_train = y_train[:-480]
             ts.test_true = ts.training_true[-480:]
+
+            if which_model == "model3_sf":
+                X_train = X_train[47:]
+                y_train = y_train[47:]
             # X_train,y_train = unison_shuffled_copies(X_train,y_train) # no val anymore
             print("inputs found...\r\n")
 
@@ -206,7 +214,9 @@ if __name__ == "__main__":
                                             training_results = p.map(run_parameter_setting2, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train, "verbose_para": 1,"save": False} for iteration in range(repeat)])
 
                                         elif which_model == "model3_sf":
+
                                             training_results = p.map(run_parameter_setting3, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train,"verbose_para": 1, "save": False, "X_train_full": X_train_full} for iteration in range(repeat)])
+
                                         clear_session()
                                         reset_uids()
                                         collected_histories = [x[0] for x in training_results]

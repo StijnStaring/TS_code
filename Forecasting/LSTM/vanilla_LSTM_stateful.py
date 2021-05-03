@@ -34,7 +34,7 @@ print("CSV files are loaded...")
 names = fullYeardata.columns
 name = names[0]
 ts = time_serie(fullYeardata[name], av_temperature)
-setting1 = forecast_setting(lag_value= 1, shuffle= False, nb_epoch= 2, batch_size_para= 1)
+setting1 = forecast_setting(lag_value= 48, shuffle= False, nb_epoch= 2, batch_size_para= 48)
 # load the LSTM input matrices
 path_X_train = path.join(path_to_array, "X_" + name + "_" + str(setting1.lag_value) + ".npy")
 X_train = np.load(path_X_train)
@@ -51,7 +51,7 @@ print("inputs found...\r\n")
 
 # should set the shuffling off
 
-# trained_model, history = build_model_stateful1(setting1, X_train, y_train, save= True)
+trained_model, history = build_model_stateful1(setting1, X_train, y_train, save= True)
 
 model = load_model("model.h5")
 if which_model == "model3_sf":

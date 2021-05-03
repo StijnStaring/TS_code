@@ -4,10 +4,10 @@ from tensorflow.python.util import deprecation
 deprecation._PRINT_DEPRECATION_WARNINGS = False
 from os import path, listdir, makedirs
 
-
+raise Exception("Not most recent file...")
 def run_once_input_LSTM(kwargs):
     print("Running LSTM input...")
-    return input_output_LSTM(kwargs["ts"].TS_norm_full, kwargs["ts"].temperature_norm, kwargs["lag_value"])
+    return input_output_LSTM_sf(kwargs["ts"].TS_norm_full, kwargs["ts"].temperature_norm, kwargs["lag_value"])
 
 if __name__ == "__main__":
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     start_time_program = time()
     # list_lag_value = [48, 96, 336, 672]
-    list_lag_value = [1]
+    list_lag_value = [48]
     for name in names:
         with open('output_arrays/output_file.txt', 'a') as file:
             file.write("Starting new serie: %s.\n"%name)

@@ -249,7 +249,8 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
 
 def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True, X_val = None, y_val = None):
     print("Warning: the validation set is turned off --> activate by putting it in the fit function.")
-    assert setting.shuffle == False and setting.lag_value == 1
+    print(setting.shuffle)
+    assert setting.lag_value == 1
     assert reset_after_epoch == True
     history = History()
     loss = []
@@ -280,7 +281,7 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
         if i == 0:
             for k in range(setting.nb_epoch):
                 try:
-                    model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+                    model.fit(x=X,y=y,epochs=1,shuffle= False, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
                 except:
                     raise Exception("Training of stateful model went wrong --> stop")
                 epoch_count = k+1
@@ -383,7 +384,6 @@ def test_set_prediction(model: Sequential, setting: forecast_setting, serie: tim
     (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
     all_predictions = history_predictions
     all_references = history_reference
-
 
     if len(collection) > 1:
         for day_int in collection[1:]:
@@ -541,6 +541,52 @@ def input_output_LSTM(training, temperature_norm, lag_value: int):
 
 
     return X,y
+
+def input_output_LSTM_sf(training: pd.Series, temperature_norm, lag_value: int = 48):
+    assert lag_value == 48
+    holidays = EnglandAndWalesHolidayCalendar().holidays(start=pd.Timestamp('2017-01-01'),end=pd.Timestamp('2017-12-31'))
+    daily = training.resample("D").sum()
+    amount_forecasts = len(daily) - 1
+    print(amount_forecasts)
+    amount_features = 1+1+7+48+2
+    inputs_collection = []
+    for i in range(48):
+        print("working on %s"%i)
+        X = np.zeros((amount_forecasts, lag_value, amount_features))
+        y = np.zeros((amount_forecasts, 1))
+        for j in np.arange(0,amount_forecasts):
+            sample_id = j*48 + i
+            history = training.values[sample_id:lag_value + sample_id]
+            y[j] = training.values[lag_value + sample_id]
+            X[j,:,0] = history
+            all_time_stamps = training.index[sample_id:lag_value + sample_id]
+            for lag_value_index in np.arange(0,lag_value): # goes from old to new
+                time_stamp = all_time_stamps[lag_value_index]
+
+                temperature_feed = get_av_temp(time_stamp,temperature_norm)
+                X[j,lag_value_index,1] = temperature_feed
+
+                weekday = np.zeros(7)
+                day = get_weekday(time_stamp) # 0 - 6
+                weekday[day] = 1
+                X[j,lag_value_index,2:9] = weekday
+
+                time = np.zeros(48)
+                time_of_day = get_daytime(time_stamp) # 0 - 47
+                time[time_of_day] = 1
+                X[j,lag_value_index,9:57] = time
+
+                holiday = np.zeros(2)
+                hol = is_holiday(time_stamp,holidays) # [no, yes]
+                if hol:
+                    holiday[1] = 1
+                else:
+                    holiday[0] = 1
+                X[j,lag_value_index,57:59] = holiday
+
+        inputs_collection.append((X,y))
+
+    return inputs_collection
 
 def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: bool):
     axis = figure_layout(figsize=(10,8),titel="",xlabel="date",ylabel="kWh", dpi= 300)
