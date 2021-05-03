@@ -316,10 +316,24 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
         file_path = "model.h5"
         save_model(model,file_path)
 
+    print("Model 3 training has finished...")
+
     return model,history
 
 
 # model = load_model(filepath, compile = True)
+def do_seeding(X_train, X_val, model):
+    print("Seeding...")
+    model.reset_states()
+    if X_val is not None:
+        total_training = np.vstack((X_train,X_val))
+    else:
+        total_training = X_train
+    for i in np.arange(0,len(total_training)):
+        row = total_training[i:i+1,:,:]
+        model.predict(row,batch_size=1)
+    print("Seeding Finished.")
+    return model
 
 def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_norm: pd.Series, lag_value: int, daily_time_stamps: pd.DatetimeIndex):
     if len(daily_time_stamps) != 48:
@@ -347,24 +361,35 @@ def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_nor
         raise Exception("Not all the values of the day are correct predicted!")
     return history_predictions, history_reference
 
-def test_set_prediction(model: Sequential, setting: forecast_setting, serie: time_serie, test_set:pd.Series, X_train, X_val, real_values: bool = True, seeding: bool = False):
-    # assumption that the test set has no gaps in the dates is not valid
-    model.reset_states()
-    if seeding: # seeding only usefull when have a stateful model
-        total_training = np.vstack((X_train,X_val))
-        for i in np.arange(0,len(total_training)):
-            row = total_training[i:i+1,:,:]
-            model.predict(row,batch_size=1)
+
+def get_X_train_till_day(X_train_full, day_int, setting: forecast_setting, serie: pd.Series):
+    assert setting.lag_value == 1
+    # prev_day = serie[serie.index.dayofyear == (day_int - 1)]
+    end = 48*(day_int - 1)
+    X_train = X_train_full[:end, :, :]
+    # assert X_train[-1,0,0] == prev_day.iloc[47]
+    return X_train
+
+
+def test_set_prediction(model: Sequential, setting: forecast_setting, serie: time_serie, test_set:pd.Series, X_train_full, real_values: bool = True, seeding: bool = False):
+    # assumption that the test set has no gaps in the dates is not valid.
 
     collection = list(get_all_days_of_year(test_set))
     day_int = collection[0]
+    if seeding:
+        X_train = get_X_train_till_day(X_train_full, day_int, setting, serie.TS_norm_full)
+        model = do_seeding(X_train, None, model)
     daily_time_stamps = test_set[test_set.index.dayofyear == day_int].index
     (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
     all_predictions = history_predictions
     all_references = history_reference
 
+
     if len(collection) > 1:
         for day_int in collection[1:]:
+            if seeding:
+                X_train = get_X_train_till_day(X_train_full, day_int, setting, serie.TS_norm_full)
+                model = do_seeding(X_train, None, model)
             daily_time_stamps = test_set[test_set.index.dayofyear == day_int].index
             (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
             all_predictions = all_predictions.append(history_predictions)

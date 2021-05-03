@@ -41,7 +41,7 @@ def run_parameter_setting1(kwargs):
     print("Model 1 running...")
     trained_model, history = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
 
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], True, False)
     show_all_forecasts(all_predictions, all_references, "nameless", False)
     print("Model 1 prediction finished...")
     outputs_model = dict()
@@ -54,9 +54,21 @@ def run_parameter_setting1(kwargs):
 def run_parameter_setting2(kwargs):
     print("Model 2 running...")
     trained_model, history = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], True, False)
 
     print("Model 2 prediction finished...")
+    outputs_model = dict()
+    for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+        output: float = Switcher(method, all_predictions, all_references)
+        outputs_model[method] = output
+
+    return history, outputs_model
+
+def run_parameter_setting3(kwargs):
+    print("Model 3 running...")
+    trained_model, history = build_model_stateful1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
+    print("Model 3 prediction finished...")
     outputs_model = dict()
     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
         output: float = Switcher(method, all_predictions, all_references)
@@ -133,6 +145,10 @@ if __name__ == "__main__":
             X_train = np.load(path_X_train)
             path_y_train = path.join(path_to_array, "y_" + name + "_" + str(lag_value) + ".npy")
             y_train = np.load(path_y_train)
+
+            if which_model == "model3_sf":
+                path_X_train_full = path.join(path_to_array, "X_" + name + "_" + str(lag_value) + "_full.npy")
+                X_train_full = np.load(path_X_train_full)
             # take the last 10 days of November as validation for the parameter search
             X_train = X_train[:-480]
             y_train = y_train[:-480]
@@ -189,6 +205,8 @@ if __name__ == "__main__":
                                         elif which_model == "model2_sl":
                                             training_results = p.map(run_parameter_setting2, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train, "verbose_para": 1,"save": False} for iteration in range(repeat)])
 
+                                        elif which_model == "model3_sf":
+                                            training_results = p.map(run_parameter_setting3, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train,"verbose_para": 1, "save": False, "X_train_full": X_train_full} for iteration in range(repeat)])
                                         clear_session()
                                         reset_uids()
                                         collected_histories = [x[0] for x in training_results]
@@ -205,6 +223,11 @@ if __name__ == "__main__":
                                                 history, outputs_model = run_parameter_setting2(
                                                     {"setting": runner, "ts": ts, "X": X_train, "y": y_train,
                                                      "verbose_para": 1, "save": False})
+                                            elif which_model == "model3_sf":
+                                                history, outputs_model = run_parameter_setting3(
+                                                    {"setting": runner, "ts": ts, "X": X_train, "y": y_train,
+                                                     "verbose_para": 1, "save": False, "X_train_full": X_train_full})
+
                                             collected_histories.append(history)
                                             collected_outputs.append(outputs_model)
                                             clear_session()

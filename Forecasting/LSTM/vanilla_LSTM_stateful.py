@@ -1,14 +1,14 @@
-
+from keras.models import load_model
 from forecasting_functions import *
 from os import makedirs, path
 
-which_model = "model1_sl"
+which_model = "model3_sf"
 Stijn = True
 
 if Stijn:
     path_history = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_series.csv"
     path_temperature = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_temp_series.csv"
-    path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays_stateful"
+    path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
 
 else:
     path_history = ""
@@ -20,7 +20,7 @@ names = fullYeardata.columns
 av_temperature = pd.read_csv(path_temperature,index_col="meter_id",parse_dates=True)
 
 
-if which_model == "model1_sl":
+if which_model == "model3_sf":
     makedirs("./Stateful_investigation/outputs", exist_ok=True)
     output_path = "./Stateful_investigation/outputs"
     path_txt_file = './Stateful_investigation/outputs/output_file.txt'
@@ -29,7 +29,6 @@ else:
     path_txt_file = ""
 
 print("CSV files are loaded...")
-
 
 
 names = fullYeardata.columns
@@ -52,4 +51,16 @@ print("inputs found...\r\n")
 
 # should set the shuffling off
 
-trained_model, history = build_model_stateful1(setting1, X_train, y_train)
+# trained_model, history = build_model_stateful1(setting1, X_train, y_train, save= True)
+
+model = load_model("model.h5")
+if which_model == "model3_sf":
+    path_X_train_full = path.join(path_to_array, "X_" + name + "_" + str(setting1.lag_value) + "_full.npy")
+    X_train_full = np.load(path_X_train_full)
+all_predictions, all_references = test_set_prediction(model, setting1, ts, ts.test_true, X_train_full, True, True)
+
+print("Model 3 prediction finished...")
+outputs_model = dict()
+for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+    output: float = Switcher(method, all_predictions, all_references)
+    outputs_model[method] = output
