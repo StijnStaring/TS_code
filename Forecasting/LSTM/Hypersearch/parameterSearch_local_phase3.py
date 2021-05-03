@@ -121,7 +121,7 @@ if __name__ == "__main__":
     start_time_program = time()
     multithreading = False
     counter = 1
-    learning_rates = [5**10-2,10**-2, 5*10**-3, 2*10**-3, 10**-3, 10**-4, 10**-5, 10**-6]
+    learning_rates = [10**-2, 5*10**-3, 2*10**-3, 10**-3, 10**-4, 10**-5, 10**-6]
     for name in names:
         if name == '0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e':
             chosen_parameters = ParameterSearch()

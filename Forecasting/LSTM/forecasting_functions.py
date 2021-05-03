@@ -249,7 +249,7 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
 
 def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True, X_val = None, y_val = None):
     print("Warning: the validation set is turned off --> activate by putting it in the fit function.")
-    assert setting.shuffle == False
+    assert setting.shuffle == False and setting.lag_value == 1
     assert reset_after_epoch == True
     history = History()
     loss = []
@@ -279,10 +279,10 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
         early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
         if i == 0:
             for k in range(setting.nb_epoch):
-                # try:
-                model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
-                # except:
-                    # raise Exception("Training of stateful model went wrong --> stop")
+                try:
+                    model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+                except:
+                    raise Exception("Training of stateful model went wrong --> stop")
                 epoch_count = k+1
                 print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
                 if np.isnan(history.history['loss'][0]):
@@ -300,6 +300,8 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
                         tracking.append(current_val_lost)
                         if len(tracking) == setting.patience + 1:
                             break
+                if k == setting.nb_epoch - 1:
+                    weights = model.get_weights()
                 if reset_after_epoch:
                     model.reset_states()
 
