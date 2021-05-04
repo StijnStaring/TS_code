@@ -303,9 +303,11 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
                     else:
                         tracking.append(current_val_lost)
                         if len(tracking) == setting.patience + 1:
+                            old_model = model
                             break
                 if k == setting.nb_epoch - 1:
                     weights = model.get_weights()
+                    old_model = model
 
                 if reset_after_epoch:
                     model.reset_states()
@@ -313,85 +315,7 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
         else:
             # Now the batch size is changed to one
             model.set_weights(weights)
-    history.history['loss'] = loss
-    history.history['val_loss'] = val_loss
-
-    # save the trained_model
-    if save:
-        file_path = "model.h5"
-        save_model(model,file_path)
-
-    print("Model 3 training has finished...")
-
-    return model,history
-
-
-def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True, X_val = None, y_val = None):
-    print("Warning: the validation set is turned off --> activate by putting it in the fit function.")
-    assert not setting.shuffle
-    if not setting.lag_value == 1:
-        print("Warning: the lag value is not equal to one.")
-    assert reset_after_epoch == True
-    history = History()
-    loss = []
-    val_loss = []
-    tracking = [np.inf]
-    for i in range(2):
-        if i == 0:
-            batch_size = setting.batch_size_parameter
-        else:
-            batch_size = 1
-
-        model = Sequential()
-
-        if setting.layers_LSTM == 1:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
-        else:
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
-            for _ in np.arange(1, setting.layers_LSTM - 1):
-                model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
-            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
-
-        for _ in range(setting.layers_DENSE):
-            model.add(Dropout(setting.dropout_DENSE))
-            model.add(Dense(units=setting.units_DENSE, activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
-        model.add(Dropout(setting.dropout_DENSE))
-        model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer= setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
-
-        if i == 0:
             model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999), loss='mse')
-            early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
-            for k in range(setting.nb_epoch):
-                # try:
-                model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
-                # except:
-                    # raise Exception("Training of stateful model went wrong --> stop")
-                epoch_count = k+1
-                print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
-                if np.isnan(history.history['loss'][0]):
-                    print("The loss became nan --> try again.")
-                    model, history = build_model_stateful1(setting, X, y, verbose_para, save, reset_after_epoch, X_val, y_val)
-                loss.append(history.history['loss'][0])
-                if X_val is not None and y_val is not None:
-                    current_val_lost = history.history['val_loss'][0]
-                    val_loss.append(current_val_lost)
-
-                    if current_val_lost < tracking[0]:
-                        weights = model.get_weights()
-                        tracking = [current_val_lost]
-                    else:
-                        tracking.append(current_val_lost)
-                        if len(tracking) == setting.patience + 1:
-                            break
-                if k == setting.nb_epoch - 1:
-                    weights = model.get_weights()
-
-                if reset_after_epoch:
-                    model.reset_states()
-
-        else:
-            # Now the batch size is changed to one
-            model.set_weights(weights)
     history.history['loss'] = loss
     history.history['val_loss'] = val_loss
 
@@ -402,7 +326,64 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
 
     print("Model 3 training has finished...")
 
-    return model,history
+    return model, old_model, history
+
+
+# def build_model_stateful1_test(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True, X_val = None, y_val = None):
+#     print("Warning: the validation set is turned off --> activate by putting it in the fit function.")
+#     assert not setting.shuffle
+#     if not setting.lag_value == 1:
+#         print("Warning: the lag value is not equal to one.")
+#     assert reset_after_epoch == True
+#
+#     history = History()
+#     loss = []
+#     val_loss = []
+#     tracking = [np.inf]
+#     batch_size = 1
+#
+#     model = Sequential()
+#
+#     if setting.layers_LSTM == 1:
+#         model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
+#     else:
+#         model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
+#         for _ in np.arange(1, setting.layers_LSTM - 1):
+#             model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
+#         model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
+#
+#     for _ in range(setting.layers_DENSE):
+#         model.add(Dropout(setting.dropout_DENSE))
+#         model.add(Dense(units=setting.units_DENSE, activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
+#     model.add(Dropout(setting.dropout_DENSE))
+#     model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer= setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
+#
+#
+#     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999), loss='mse')
+#     early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
+#
+#     for k in range(setting.nb_epoch):
+#         # try:
+#         model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+#         # except:
+#             # raise Exception("Training of stateful model went wrong --> stop")
+#         epoch_count = k+1
+#         print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
+#         if np.isnan(history.history['loss'][0]):
+#             print("The loss became nan --> try again.")
+#             model, history = build_model_stateful1_test(setting, X, y, verbose_para, save, reset_after_epoch, X_val, y_val)
+#         loss.append(history.history['loss'][0])
+#
+#         if reset_after_epoch:
+#             model.reset_states()
+#
+#
+#     history.history['loss'] = loss
+#     history.history['val_loss'] = val_loss
+#
+#     print("Model 3 training has finished...")
+#
+#     return model,history
 
 # model = load_model(filepath, compile = True)
 def do_seeding(X_train, X_val, model):
