@@ -2,6 +2,7 @@ tutorial/data/
 Forecasting/LSTM/Vanilla_LSTM_figures/
 Forecasting/basemodel/data/
 Forecasting/LSTM/VM_calculating_inputs_LSTM/output_arrays/
+Forecasting/LSTM/VM_calculating_inputs_LSTM/output_arrays_sf48/
 Forecasting/LSTM/VM_calculating_inputs_LSTM/output_arrays_stateful/
 Forecasting/LSTM/Hypersearch/VM_parametersearch_stateless1/src/X_0x1e84e4d5cf1f463147f3e4d566167597423d7769_48.npy
 Forecasting/LSTM/Hypersearch/VM_parametersearch_stateless1/src/y_0x1e84e4d5cf1f463147f3e4d566167597423d7769_48.npy

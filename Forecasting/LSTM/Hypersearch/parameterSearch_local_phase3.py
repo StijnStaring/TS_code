@@ -35,7 +35,7 @@ class ParameterSearch:
         self.list_nb_epoch = [2]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
         self.list_batch_size_parameter = [48]
-        self.list_learning_rate = [10 ** -2] # found that 10**-1 gave instable results
+        self.list_learning_rate = [10**-2,5*10**-3,2*10**-3,10**-3,10**-4,10**-5,10**-6] # found that 10**-1 gave instable results
         self.list_patience = [0]
         self.list_shuffle = ['True']  # shuffling is set to True
         self.list_repeat = [3]  # four is chosen because have four cores

@@ -72,8 +72,8 @@ class forecast_setting:
         self.shuffle = shuffle
         self.repeat = repeat
 
-    def __str__(self):
-        print(vars(self))
+    # def __str__(self):
+    #     print(list(vars(self)))
 
 class time_serie:
 
@@ -249,8 +249,9 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
 
 def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True, X_val = None, y_val = None):
     print("Warning: the validation set is turned off --> activate by putting it in the fit function.")
-    print(setting.shuffle)
-    assert setting.lag_value == 1
+    assert not setting.shuffle
+    if not setting.lag_value == 1:
+        print("Warning: the lag value is not equal to one.")
     assert reset_after_epoch == True
     history = History()
     loss = []
@@ -263,6 +264,7 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
             batch_size = 1
 
         model = Sequential()
+
         if setting.layers_LSTM == 1:
             model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
         else:
@@ -276,19 +278,20 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
             model.add(Dense(units=setting.units_DENSE, activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
         model.add(Dropout(setting.dropout_DENSE))
         model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer= setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
-        model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999),loss='mse')
-        early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
+
         if i == 0:
+            model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999), loss='mse')
+            early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
             for k in range(setting.nb_epoch):
-                try:
-                    model.fit(x=X,y=y,epochs=1,shuffle= False, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
-                except:
-                    raise Exception("Training of stateful model went wrong --> stop")
+                # try:
+                model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+                # except:
+                    # raise Exception("Training of stateful model went wrong --> stop")
                 epoch_count = k+1
                 print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
                 if np.isnan(history.history['loss'][0]):
                     print("The loss became nan --> try again.")
-                    model, history = build_model_stateful1(setting, X, y, X_val, y_val, verbose_para, save = False, reset_after_epoch = True)
+                    model, history = build_model_stateful1(setting, X, y, verbose_para, save, reset_after_epoch, X_val, y_val)
                 loss.append(history.history['loss'][0])
                 if X_val is not None and y_val is not None:
                     current_val_lost = history.history['val_loss'][0]
@@ -303,6 +306,7 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
                             break
                 if k == setting.nb_epoch - 1:
                     weights = model.get_weights()
+
                 if reset_after_epoch:
                     model.reset_states()
 
@@ -322,6 +326,84 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
     return model,history
 
 
+def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True, X_val = None, y_val = None):
+    print("Warning: the validation set is turned off --> activate by putting it in the fit function.")
+    assert not setting.shuffle
+    if not setting.lag_value == 1:
+        print("Warning: the lag value is not equal to one.")
+    assert reset_after_epoch == True
+    history = History()
+    loss = []
+    val_loss = []
+    tracking = [np.inf]
+    for i in range(2):
+        if i == 0:
+            batch_size = setting.batch_size_parameter
+        else:
+            batch_size = 1
+
+        model = Sequential()
+
+        if setting.layers_LSTM == 1:
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
+        else:
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM, batch_input_shape=(batch_size, X.shape[1], X.shape[2])))
+            for _ in np.arange(1, setting.layers_LSTM - 1):
+                model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, return_sequences=True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
+            model.add(LSTM(units=setting.units_LSTM, activation=setting.activation, stateful= True, kernel_regularizer= setting.kernel_regularizer_LSTM, recurrent_regularizer= setting.recurrent_regularizer_LSTM, bias_regularizer=setting.bais_regularizer_LSTM, dropout= setting.dropout_LSTM, recurrent_dropout= setting.recurrent_dropout_LSTM, activity_regularizer= setting.activity_regularizer_LSTM))
+
+        for _ in range(setting.layers_DENSE):
+            model.add(Dropout(setting.dropout_DENSE))
+            model.add(Dense(units=setting.units_DENSE, activation='relu', kernel_regularizer=setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
+        model.add(Dropout(setting.dropout_DENSE))
+        model.add(Dense(units=y.shape[1], activation='relu', kernel_regularizer= setting.kernel_regularizer_DENSE, bias_regularizer= setting.bais_regularizer_DENSE, activity_regularizer= setting.activity_regularizer_DENSE))
+
+        if i == 0:
+            model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999), loss='mse')
+            early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
+            for k in range(setting.nb_epoch):
+                # try:
+                model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+                # except:
+                    # raise Exception("Training of stateful model went wrong --> stop")
+                epoch_count = k+1
+                print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
+                if np.isnan(history.history['loss'][0]):
+                    print("The loss became nan --> try again.")
+                    model, history = build_model_stateful1(setting, X, y, verbose_para, save, reset_after_epoch, X_val, y_val)
+                loss.append(history.history['loss'][0])
+                if X_val is not None and y_val is not None:
+                    current_val_lost = history.history['val_loss'][0]
+                    val_loss.append(current_val_lost)
+
+                    if current_val_lost < tracking[0]:
+                        weights = model.get_weights()
+                        tracking = [current_val_lost]
+                    else:
+                        tracking.append(current_val_lost)
+                        if len(tracking) == setting.patience + 1:
+                            break
+                if k == setting.nb_epoch - 1:
+                    weights = model.get_weights()
+
+                if reset_after_epoch:
+                    model.reset_states()
+
+        else:
+            # Now the batch size is changed to one
+            model.set_weights(weights)
+    history.history['loss'] = loss
+    history.history['val_loss'] = val_loss
+
+    # save the trained_model
+    if save:
+        file_path = "model.h5"
+        save_model(model,file_path)
+
+    print("Model 3 training has finished...")
+
+    return model,history
+
 # model = load_model(filepath, compile = True)
 def do_seeding(X_train, X_val, model):
     print("Seeding...")
@@ -332,7 +414,12 @@ def do_seeding(X_train, X_val, model):
         total_training = X_train
     for i in np.arange(0,len(total_training)):
         row = total_training[i:i+1,:,:]
-        model.predict(row,batch_size=1)
+        y_hat = model.predict(row,batch_size=1)
+        # print(y_hat)
+        if np.isnan(y_hat):
+            print("This are the amount of nan values in the weight matrices.")
+            print([np.isnan(wm).sum() for wm in model.get_weights()])
+            raise Exception("nan predicted during seeding")
     print("Seeding Finished.")
     return model
 
@@ -352,6 +439,10 @@ def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_nor
         shape = prediction_input.shape
         assert shape[0] == 1 and shape[1] == lag_value and shape[2] == 59
         y_hat = model.predict(prediction_input, batch_size= 1)
+        # print(y_hat)
+        if np.isnan(y_hat):
+            print([np.isnan(wm).sum() for wm in model.get_weights()])
+            raise Exception("nan predicted during seeding")
         assert len(y_hat) == 1
         # integrate the prediction in the TS_copy to be used in the next iterate
         TS_copy[time_stamp] = y_hat
@@ -588,7 +679,7 @@ def input_output_LSTM_sf(training: pd.Series, temperature_norm, lag_value: int =
 
     return inputs_collection
 
-def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: bool):
+def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: bool, path: str):
     axis = figure_layout(figsize=(10,8),titel="",xlabel="date",ylabel="kWh", dpi= 300)
     labels = ["True Future", "Model Prediction"]
 
@@ -597,19 +688,18 @@ def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: 
     axis.legend(labels)
 
     if save:
-        path = "Vanilla_LSTM_figures/"
         fname = path + "ID" + ID + "_Day" + day_int + ".png"
         plt.savefig(fname, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None,
                     transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
 
 
-def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = True):
+def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = True, path = ""):
     collection = get_all_days_of_year(all_predictions)
     for day_int in collection:
         predictions = all_predictions[all_predictions.index.dayofyear == day_int]
         references = all_references[all_references.index.dayofyear == day_int]
-        show_forecast(predictions, references, ID, str(day_int), save)
-        break
+        show_forecast(predictions, references, ID, str(day_int), save, path)
+        break # only show first day
     plt.show()
 
 def unison_shuffled_copies(a, b):

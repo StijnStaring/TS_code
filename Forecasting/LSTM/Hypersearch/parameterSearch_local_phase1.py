@@ -7,7 +7,6 @@ from tensorflow.python.util import deprecation
 deprecation._PRINT_DEPRECATION_WARNINGS = False
 from keras.backend import clear_session, reset_uids
 
-# parameters that are tried
 # first stage --> regularization off
 class ParameterSearch:
     def __init__(self):
@@ -27,12 +26,13 @@ class ParameterSearch:
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
         self.list_lag_value = [1]
-        self.list_nb_epoch = [10]
+        self.list_nb_epoch = [20]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
         self.list_batch_size_parameter = [48]
-        self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
+        self.list_learning_rate = [10**-3, 10 **-4]
+        # self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
-        self.list_shuffle = ['False']  # shuffling is set to True only when stateless
+        self.list_shuffle = [False]  # shuffling is set to True only when stateless
         self.list_repeat = [3]  # four is chosen because have four cores
 
         assert self.list_patience[0] < self.list_nb_epoch[0]
@@ -161,6 +161,7 @@ if __name__ == "__main__":
             if which_model == "model3_sf":
                 X_train = X_train[47:]
                 y_train = y_train[47:]
+
             # X_train,y_train = unison_shuffled_copies(X_train,y_train) # no val anymore
             print("inputs found...\r\n")
 
