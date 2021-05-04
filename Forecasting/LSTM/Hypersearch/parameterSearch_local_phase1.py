@@ -28,8 +28,8 @@ class ParameterSearch:
         self.list_lag_value = [1]
         self.list_nb_epoch = [2]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
-        self.list_batch_size_parameter = [48]
-        # self.list_batch_size_parameter = [1]
+        # self.list_batch_size_parameter = [48]
+        self.list_batch_size_parameter = [1]
         self.list_learning_rate = [10**-3, 10 **-4]
         # self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
@@ -65,18 +65,23 @@ def run_parameter_setting2(kwargs):
 
     return history, outputs_model
 
-def test_similarity_models(model, old_model, X_train, batch_size):
-    prediction_input = X_train[0:batch_size,:,:]
-    y_hat_old = old_model.predict(prediction_input, batch_size=batch_size).squeeze()
-    print("y_hat_old: %s." % y_hat_old)
-    collection = []
-    for i in range(batch_size):
-        y_hat = model.predict(X_train[i:i+1,:,:], batch_size=1)
-        collection.append(y_hat)
-    col_ar = np.array(collection).squeeze()
-    print("col_ar %s."%col_ar)
-    if not all(col_ar == y_hat_old):
-        raise Exception("Not all the values are equal!!")
+
+# def run_parameter_setting3(kwargs):
+#     print("Model 3 running...")
+#     trained_model, history = build_model_stateful1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
+#     # test_similarity_models(trained_model, old_model, kwargs["X"], kwargs["setting"].batch_size_parameter)
+#     all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
+#     print("Model 3 prediction finished...")
+#     outputs_model = dict()
+#     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+#         output: float = Switcher(method, all_predictions, all_references)
+#         outputs_model[method] = output
+#
+#     return history, outputs_model
+#
+
+
+
 
 def run_parameter_setting3(kwargs):
     print("Model 3 running...")
@@ -90,7 +95,6 @@ def run_parameter_setting3(kwargs):
         outputs_model[method] = output
 
     return history, outputs_model
-
 
 if __name__ == "__main__":
     which_model = "model3_sf"
