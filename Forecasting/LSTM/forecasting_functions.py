@@ -330,7 +330,7 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
         file_path = "model.h5"
         save_model(model,file_path)
 
-    print("Model 3 training has finished...")
+    print("Model training has finished...")
 
     return model, history
 
@@ -414,6 +414,85 @@ def test_set_prediction(model: Sequential, setting: forecast_setting, serie: tim
             (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
             all_predictions = all_predictions.append(history_predictions)
             all_references = all_references.append(history_reference)
+
+    if real_values:
+        all_predictions = norm_inverse(all_predictions,serie.scaler_history)
+        all_references = norm_inverse(all_references,serie.scaler_history)
+
+    return all_predictions, all_references
+
+def daily_prediction_sf(collection_models: list, TS_norm_full: pd.Series, temperature_norm: pd.Series, lag_value: int, daily_time_stamps: pd.DatetimeIndex):
+    assert len(daily_time_stamps) == 48
+    TS_copy = TS_norm_full.copy(deep= True)
+    history_predictions = pd.Series(index= daily_time_stamps)
+    history_reference = pd.Series(index= daily_time_stamps)
+    for i in np.arange(0,len(daily_time_stamps)):
+        model = collection_models[i]
+        time_stamp = daily_time_stamps[i]
+        index_time_stamp = TS_copy.index.get_loc(time_stamp) # want to predict the time_stamp
+        start = index_time_stamp - lag_value
+        end = index_time_stamp
+        history = TS_copy[start:end+1]
+        prediction_input, reference = input_output_LSTM(history, temperature_norm, lag_value) # also the value to predict should be given
+        shape = prediction_input.shape
+        assert shape[0] == 1 and shape[1] == lag_value and shape[2] == 59
+        y_hat = model.predict(prediction_input, batch_size= 1)
+        if np.isnan(y_hat):
+            print([np.isnan(wm).sum() for wm in model.get_weights()])
+            raise Exception("nan predicted during seeding")
+        assert len(y_hat) == 1
+        # integrate the prediction in the TS_copy to be used in the next iterate
+        TS_copy[time_stamp] = y_hat
+        history_predictions[time_stamp] = y_hat
+        history_reference[time_stamp] = reference
+
+    if history_predictions.isnull().sum() + history_reference.isnull().sum() != 0:
+        raise Exception("Not all the values of the day are correct predicted!")
+    return history_predictions, history_reference
+
+def get_X_train_till_day_sf(setting, X_train_full, day_int):
+    assert setting.lag_value == 48
+    assert len(X_train_full) == 364
+    end = day_int - 2
+    X_train = X_train_full[:end, :, :]
+    return X_train
+
+from os import path
+def test_set_prediction_sf(path_to_array, collection_model: list, setting: forecast_setting, serie: time_serie, test_set:pd.Series, real_values: bool = True):
+    # assumption that the test set has no gaps in the dates is not valid.
+
+    collection = list(get_all_days_of_year(test_set))
+    day_int = collection[0]
+    for model_number in range(48):
+        path_X_train_full = path.join(path_to_array,"X_" + serie.name + "_" + str(setting.lag_value) + "_full_" + str(model_number) + "_.npy")
+        X_train_full = np.load(path_X_train_full)
+        X_train = get_X_train_till_day_sf(setting, X_train_full, day_int)
+        model = collection_model[model_number]
+        model = do_seeding(X_train, None, model)
+        collection_model[model_number] = model
+    daily_time_stamps = test_set[test_set.index.dayofyear == day_int].index
+    (history_predictions, history_reference) = daily_prediction_sf(collection_model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
+    all_predictions = history_predictions
+    all_references = history_reference
+    show_all_forecasts(all_predictions, all_references, "",False, "")
+
+    if len(collection) > 1:
+        for model_number in range(48):
+            path_X_train_full = path.join(path_to_array,
+                                          "X_" + serie.name + "_" + str(setting.lag_value) + "_full_" + str(
+                                              model_number) + "_.npy")
+            X_train_full = np.load(path_X_train_full)
+            X_train = get_X_train_till_day_sf(setting, X_train_full, day_int)
+            model = collection_model[model_number]
+            model = do_seeding(X_train, None, model)
+            collection_model[model_number] = model
+        daily_time_stamps = test_set[test_set.index.dayofyear == day_int].index
+        (history_predictions, history_reference) = daily_prediction_sf(collection_model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
+        all_predictions = history_predictions
+        all_references = history_reference
+
+        all_predictions = all_predictions.append(history_predictions)
+        all_references = all_references.append(history_reference)
 
     if real_values:
         all_predictions = norm_inverse(all_predictions,serie.scaler_history)

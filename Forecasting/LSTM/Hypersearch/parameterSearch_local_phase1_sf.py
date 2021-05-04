@@ -25,12 +25,13 @@ class ParameterSearch:
         self.list_kernel_regularization_DENSE = [None]
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
-        self.list_lag_value = [1]
-        self.list_nb_epoch = [2]
+        self.list_lag_value = [48]
+        self.list_nb_epoch = [1]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
         # self.list_batch_size_parameter = [48]
         self.list_batch_size_parameter = [1]
-        self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
+        # self.list_learning_rate = [10**-3, 10 **-4]
+        self.list_learning_rate = [10 ** -4, 10 ** -3, 10**-2] # found that 10**-1 gave instable results
         self.list_patience = [0]
         self.list_shuffle = [False]  # shuffling is set to True only when stateless
         self.list_repeat = [3]  # four is chosen because have four cores
@@ -78,6 +79,36 @@ def run_parameter_setting3(kwargs):
     return history, outputs_model
 
 
+def run_parameter_setting4(kwargs):
+
+    collection_trained_models = []
+    for model_number in range(48):
+        print("model %s"%model_number)
+        path_X_train = path.join(kwargs["path_to_array"], "X_" + kwargs["ts"].name + "_" + str(kwargs["setting"].lag_value) + "_" + str(model_number) + "_.npy")
+        X_train = np.load(path_X_train)
+        path_y_train = path.join(kwargs["path_to_array"], "y_" + kwargs["ts"].name + "_" + str(kwargs["setting"].lag_value) + "_" + str(model_number) + "_.npy")
+        y_train = np.load(path_y_train)
+        # take the last 10 days of November as validation for the parameter search
+        X_train = X_train[:-10]
+        y_train = y_train[:-10]
+
+        print("inputs found...\r\n")
+
+        print("model 4 running...")
+        trained_model, history = build_model_stateful1(kwargs["setting"], X_train, y_train)
+        collection_trained_models.append(trained_model)
+
+
+    all_predictions, all_references = test_set_prediction_sf(kwargs["path_to_array"], collection_trained_models, kwargs["setting"], kwargs["ts"],
+                                                                 kwargs["ts"].test_true, True)
+    print("Model 4 prediction finished.")
+
+    for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+        output: float = Switcher(method, all_predictions, all_references)
+        outputs_model[method] = output
+
+    return outputs_model
+
 
 
 if __name__ == "__main__":
@@ -87,10 +118,7 @@ if __name__ == "__main__":
     if Stijn:
         path_history = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_series.csv"
         path_temperature = "D:\AI_time_series_repos\TS_code\Forecasting\\basemodel\data\DF_three_temp_series.csv"
-        if which_model == "model4_sf":
-            path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays_sf48"
-        else:
-            path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays"
+        path_to_array = "D:\AI_time_series_repos\TS_code\Forecasting\LSTM\VM_calculating_inputs_LSTM\output_arrays_sf48"
 
     else:
         path_history = ""
@@ -153,29 +181,6 @@ if __name__ == "__main__":
         ts = time_serie(fullYeardata[name], av_temperature)
         setting_identification = 1
         for lag_value in chosen_parameters.list_lag_value:
-            print("lag_value: %s \r\n" % lag_value)
-
-            # load the LSTM input matrices
-            path_X_train = path.join(path_to_array, "X_" + name + "_" + str(lag_value) + ".npy")
-            X_train = np.load(path_X_train)
-            path_y_train = path.join(path_to_array, "y_" + name + "_" + str(lag_value) + ".npy")
-            y_train = np.load(path_y_train)
-
-            if which_model == "model3_sf":
-                path_X_train_full = path.join(path_to_array, "X_" + name + "_" + str(lag_value) + "_full.npy")
-                X_train_full = np.load(path_X_train_full)
-            # take the last 10 days of November as validation for the parameter search
-            X_train = X_train[:-480]
-            y_train = y_train[:-480]
-            ts.test_true = ts.training_true[-480:]
-
-            print("inputs found...\r\n")
-
-            print("The shape of X_train: %s"%(X_train.shape,))
-            print("The shape of y_train: %s" % (y_train.shape,))
-
-            print("The parameter search has started for serie %s.\r\n" % name)
-            print(50 * "-" + "\r\n")
 
             dropout_LSTM = chosen_parameters.list_dropout_LSTM[0]
             recurrent_dropout_LSTM = chosen_parameters.list_recurrent_dropout_LSTM[0]
@@ -244,7 +249,12 @@ if __name__ == "__main__":
                                                     {"setting": runner, "ts": ts, "X": X_train, "y": y_train,
                                                      "verbose_para": 1, "save": False, "X_train_full": X_train_full})
 
-                                            collected_histories.append(history)
+                                            elif which_model == "model4_sf":
+                                                assert runner.lag_value == 48
+                                                outputs_model = run_parameter_setting4(
+                                                    {"setting": runner, "ts": ts, "path_to_array":path_to_array})
+
+                                            # collected_histories.append(history)
                                             collected_outputs.append(outputs_model)
                                             clear_session()
                                             reset_uids()
@@ -258,18 +268,18 @@ if __name__ == "__main__":
                                         print(20*"*" + "\r\n")
                                         txt_file.write(20 * "*" + "\r\n")
 
-                                        for r in np.arange(1,repeat + 1): # patience is the number of epochs without improvement
-                                            history = collected_histories[r-1]
-                                            print("Run: %s \r\n"%r)
-                                            txt_file.write("Run: %s \r\n" % r)
-                                            print("loss: %s \r\n" % history.history["loss"])
-                                            txt_file.write("loss: %s \r\n" % history.history["loss"])
-                                            # print("val_loss: %s \r\n" % history.history["val_loss"])
-                                            # txt_file.write("val_loss: %s \r\n" % history.history["val_loss"])
-                                            # training_result[str(setting_identification)+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
-                                            training_result[str(setting_identification) + "_run_" + str(r)] = [
-                                                len(history.history["loss"]) - patience,
-                                                history.history["loss"][-1 - patience]]
+                                        # for r in np.arange(1,repeat + 1): # patience is the number of epochs without improvement
+                                        #     history = collected_histories[r-1]
+                                        #     print("Run: %s \r\n"%r)
+                                        #     txt_file.write("Run: %s \r\n" % r)
+                                        #     print("loss: %s \r\n" % history.history["loss"])
+                                        #     txt_file.write("loss: %s \r\n" % history.history["loss"])
+                                        #     # print("val_loss: %s \r\n" % history.history["val_loss"])
+                                        #     # txt_file.write("val_loss: %s \r\n" % history.history["val_loss"])
+                                        #     # training_result[str(setting_identification)+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
+                                        #     training_result[str(setting_identification) + "_run_" + str(r)] = [
+                                        #         len(history.history["loss"]) - patience,
+                                        #         history.history["loss"][-1 - patience]]
 
 
                                         for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
