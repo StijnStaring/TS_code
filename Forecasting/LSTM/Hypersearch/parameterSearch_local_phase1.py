@@ -30,8 +30,8 @@ class ParameterSearch:
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
         # self.list_batch_size_parameter = [48]
         self.list_batch_size_parameter = [1]
-        self.list_learning_rate = [10**-3, 10 **-4]
-        # self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
+        # self.list_learning_rate = [10**-3, 10 **-4]
+        self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
         self.list_shuffle = [False]  # shuffling is set to True only when stateless
         self.list_repeat = [3]  # four is chosen because have four cores
@@ -66,27 +66,9 @@ def run_parameter_setting2(kwargs):
     return history, outputs_model
 
 
-# def run_parameter_setting3(kwargs):
-#     print("Model 3 running...")
-#     trained_model, history = build_model_stateful1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-#     # test_similarity_models(trained_model, old_model, kwargs["X"], kwargs["setting"].batch_size_parameter)
-#     all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
-#     print("Model 3 prediction finished...")
-#     outputs_model = dict()
-#     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
-#         output: float = Switcher(method, all_predictions, all_references)
-#         outputs_model[method] = output
-#
-#     return history, outputs_model
-#
-
-
-
-
 def run_parameter_setting3(kwargs):
     print("Model 3 running...")
-    trained_model, old_model, history = build_model_stateful1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-    test_similarity_models(trained_model, old_model, kwargs["X"], kwargs["setting"].batch_size_parameter)
+    trained_model, history = build_model_stateful1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
     all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
     print("Model 3 prediction finished...")
     outputs_model = dict()
@@ -95,6 +77,9 @@ def run_parameter_setting3(kwargs):
         outputs_model[method] = output
 
     return history, outputs_model
+
+
+
 
 if __name__ == "__main__":
     which_model = "model3_sf"
@@ -177,11 +162,6 @@ if __name__ == "__main__":
             y_train = y_train[:-480]
             ts.test_true = ts.training_true[-480:]
 
-            if which_model == "model3_sf":
-                X_train = X_train[47:]
-                y_train = y_train[47:]
-
-            # X_train,y_train = unison_shuffled_copies(X_train,y_train) # no val anymore
             print("inputs found...\r\n")
 
             print("The shape of X_train: %s"%(X_train.shape,))
@@ -234,7 +214,6 @@ if __name__ == "__main__":
                                             training_results = p.map(run_parameter_setting2, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train, "verbose_para": 1,"save": False} for iteration in range(repeat)])
 
                                         elif which_model == "model3_sf":
-
                                             training_results = p.map(run_parameter_setting3, [{"setting": runner, "ts": ts, "X": X_train, "y": y_train,"verbose_para": 1, "save": False, "X_train_full": X_train_full} for iteration in range(repeat)])
 
                                         clear_session()

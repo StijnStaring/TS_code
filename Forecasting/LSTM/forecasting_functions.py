@@ -276,7 +276,7 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
     loss = []
     val_loss = []
     tracking = [np.inf]
-
+    weights = None
     model = Sequential()
 
     if setting.layers_LSTM == 1:
@@ -309,38 +309,18 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
             val_loss.append(current_val_lost)
 
             if current_val_lost < tracking[0]:
+                model.reset_states() # not necessary
                 weights = model.get_weights()
                 tracking = [current_val_lost]
             else:
                 tracking.append(current_val_lost)
                 if len(tracking) == setting.patience + 1:
-                    model.set_weights()
+                    model.reset_states() # not necessary
+                    model.set_weights(weights)
                     break
 
-        if k == 0:
-            model.reset_states()
-            start_weights = model.get_weights()
-            prediction_input = X[0:10, :, :]
-            y_hat_old = []
-            for i in range(10):
-                prediction_input = X[i:i+1,:,:]
-                y_hat_old.append(model.predict(prediction_input))
-
-        if k != 0:
-            model.reset_states()
-            model.set_weights(start_weights)
-            y_hat_new = []
-            for i in range(10):
-                prediction_input = X[i:i+1, :, :]
-                y_hat_new.append(model.predict(prediction_input))
-
-            if not all(np.array(y_hat_new) == np.array(y_hat_old)):
-                raise Exception("Not all the values are equal!!")
-            else:
-                print("success")
         if reset_after_epoch:
             model.reset_states()
-
 
     history.history['loss'] = loss
     history.history['val_loss'] = val_loss
@@ -366,7 +346,6 @@ def do_seeding(X_train, X_val, model):
     for i in np.arange(0,len(total_training)):
         row = total_training[i:i+1,:,:]
         y_hat = model.predict(row,batch_size=1)
-        # print(y_hat)
         if np.isnan(y_hat):
             print("This are the amount of nan values in the weight matrices.")
             print([np.isnan(wm).sum() for wm in model.get_weights()])
@@ -390,7 +369,6 @@ def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_nor
         shape = prediction_input.shape
         assert shape[0] == 1 and shape[1] == lag_value and shape[2] == 59
         y_hat = model.predict(prediction_input, batch_size= 1)
-        # print(y_hat)
         if np.isnan(y_hat):
             print([np.isnan(wm).sum() for wm in model.get_weights()])
             raise Exception("nan predicted during seeding")
