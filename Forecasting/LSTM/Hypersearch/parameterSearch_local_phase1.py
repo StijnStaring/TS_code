@@ -25,11 +25,11 @@ class ParameterSearch:
         self.list_kernel_regularization_DENSE = [None]
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
-        self.list_lag_value = [1]
+        self.list_lag_value = [48]
         self.list_nb_epoch = [2]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
         # self.list_batch_size_parameter = [48]
-        self.list_batch_size_parameter = [1]
+        self.list_batch_size_parameter = [48]
         self.list_learning_rate = [10 ** -4, 10 ** -3, 10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
         self.list_shuffle = [False]  # shuffling is set to True only when stateless
@@ -81,7 +81,7 @@ def run_parameter_setting3(kwargs):
 
 
 if __name__ == "__main__":
-    which_model = "model4_sf"
+    which_model = "model1_sl"
     Stijn = True
 
     if Stijn:

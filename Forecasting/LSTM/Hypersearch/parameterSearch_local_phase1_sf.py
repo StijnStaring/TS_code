@@ -236,7 +236,7 @@ if __name__ == "__main__":
                                         collected_outputs = []
 
                                         for iteration in range(repeat):
-                                            if which_model == "model1_sl":
+                                            if which_model == "model3_sf":
                                                 history,outputs_model = run_parameter_setting1({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False})
                                             elif which_model == "model2_sl":
                                                 history, outputs_model = run_parameter_setting2(
