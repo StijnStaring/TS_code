@@ -474,13 +474,12 @@ def test_set_prediction_sf(path_to_array, collection_model: list, setting: forec
     (history_predictions, history_reference) = daily_prediction_sf(collection_model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
     all_predictions = history_predictions
     all_references = history_reference
-    show_all_forecasts(all_predictions, all_references, "",False, "")
+
+    # show_all_forecasts(all_predictions, all_references, "",False, "")
 
     if len(collection) > 1:
         for model_number in range(48):
-            path_X_train_full = path.join(path_to_array,
-                                          "X_" + serie.name + "_" + str(setting.lag_value) + "_full_" + str(
-                                              model_number) + "_.npy")
+            path_X_train_full = path.join(path_to_array,"X_" + serie.name + "_" + str(setting.lag_value) + "_full_" + str(model_number) + "_.npy")
             X_train_full = np.load(path_X_train_full)
             X_train = get_X_train_till_day_sf(setting, X_train_full, day_int)
             model = collection_model[model_number]
@@ -646,7 +645,6 @@ def input_output_LSTM_sf(training: pd.Series, temperature_norm, lag_value: int =
     holidays = EnglandAndWalesHolidayCalendar().holidays(start=pd.Timestamp('2017-01-01'),end=pd.Timestamp('2017-12-31'))
     daily = training.resample("D").sum()
     amount_forecasts = len(daily) - 1
-    print(amount_forecasts)
     amount_features = 1+1+7+48+2
     inputs_collection = []
     for i in range(48):
@@ -696,18 +694,18 @@ def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: 
     axis.legend(labels)
 
     if save:
-        fname = path + "ID" + ID + "_Day" + day_int + ".png"
+        fname = "ID" + ID + "_Day" + day_int + ".png"
         plt.savefig(fname, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None,
                     transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
 
 
-def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = True, path = ""):
+def show_all_forecasts(all_predictions, all_references,ID: str, save: bool = True, path: str = ""):
     collection = get_all_days_of_year(all_predictions)
     for day_int in collection:
         predictions = all_predictions[all_predictions.index.dayofyear == day_int]
         references = all_references[all_references.index.dayofyear == day_int]
         show_forecast(predictions, references, ID, str(day_int), save, path)
-        break # only show first day
+         # only show first day
     plt.show()
 
 def unison_shuffled_copies(a, b):
