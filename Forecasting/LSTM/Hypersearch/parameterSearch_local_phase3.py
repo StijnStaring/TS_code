@@ -31,13 +31,13 @@ class ParameterSearch:
         self.list_kernel_regularization_DENSE = [None]
         self.list_bais_regularization_DENSE = [None]
         self.list_activity_regularization_DENSE = [None]
-        self.list_lag_value = [48]
+        self.list_lag_value = [1]
         self.list_nb_epoch = [2]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
-        self.list_batch_size_parameter = [48]
-        self.list_learning_rate = [10**-2,5*10**-3,2*10**-3,10**-3,10**-4,10**-5,10**-6] # found that 10**-1 gave instable results
+        self.list_batch_size_parameter = [1]
+        self.list_learning_rate = [10**-2] # found that 10**-1 gave instable results
         self.list_patience = [0]
-        self.list_shuffle = ['True']  # shuffling is set to True
+        self.list_shuffle = [False]  # shuffling is set to True
         self.list_repeat = [3]  # four is chosen because have four cores
 
         assert self.list_patience[0] < self.list_nb_epoch[0]
@@ -69,9 +69,28 @@ def run_parameter_setting2(kwargs):
 
     return history, outputs_model
 
+def run_parameter_setting3(kwargs):
+    print("Model 3 running...")
+    trained_model, history = build_model_stateful1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
+    if not np.isnan(history.history["loss"][-1]):
+        all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
+        print("Model 3 prediction finished...")
+        outputs_model = dict()
+        for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+            output: float = Switcher(method, all_predictions, all_references)
+            outputs_model[method] = output
+
+        return history, outputs_model
+    else:
+        outputs_model = dict()
+        for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+            output: float = np.nan
+            outputs_model[method] = output
+        return history, outputs_model
+
 
 if __name__ == "__main__":
-    which_model = "model1_sl"
+    which_model = "model3_sf"
     Stijn = True
 
     if Stijn:
@@ -89,19 +108,9 @@ if __name__ == "__main__":
     av_temperature = pd.read_csv(path_temperature,index_col="meter_id",parse_dates=True)
 
     name = str(time())
-    if which_model == "model1_sl":
-        makedirs(name, exist_ok=True)
-        output_path = name
-        path_txt_file = path.join(output_path,which_model + "_" + "output_path.txt")
-    elif which_model == "model2_sl":
-        makedirs(name, exist_ok=True)
-        output_path = name
-        path_txt_file = path.join(output_path, which_model + "_" + "output_path.txt")
-
-    else:
-        output_path = ""
-        path_txt_file = ""
-
+    makedirs(name, exist_ok=True)
+    output_path = name
+    path_txt_file = path.join(output_path, which_model + "_" + "output_path.txt")
 
     print("CSV files are loaded...")
 
@@ -125,22 +134,23 @@ if __name__ == "__main__":
     for name in names:
         if name == '0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e':
             chosen_parameters = ParameterSearch()
-            chosen_parameters.list_units_LSTM = [20]
+            chosen_parameters.list_units_LSTM = [50]
             chosen_parameterslist_layers_LSTM = [1]
-            chosen_parameters.list_lag_value = [96]
             chosen_parameters.list_learning_rate = learning_rates
 
         elif name == '0x1e84e4d5cf1f463147f3e4d566167597423d7769':
             chosen_parameters = ParameterSearch()
-            chosen_parameters.list_lag_value = [96]
+            chosen_parameters.list_units_LSTM = [50]
+            chosen_parameters.list_layers_LSTM = [3]
             chosen_parameters.list_learning_rate = learning_rates
-            chosen_parameters.list_dropout_LSTM = [0.2]
+            chosen_parameters.list_recurrent_regularization_LSTM = [10**-3]
+
 
         elif name == '0xc3b2f61a72e188cfd44483fce1bc11d6a628766d':
             chosen_parameters = ParameterSearch()
-            chosen_parameters.list_lag_value = [48]
+            chosen_parameters.list_units_LSTM = [20]
+            chosen_parameterslist_layers_LSTM = [1]
             chosen_parameters.list_learning_rate = learning_rates
-            chosen_parameters.list_dropout_DENSE = [0.4]
 
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
@@ -158,6 +168,11 @@ if __name__ == "__main__":
             path_y_train = path.join(path_to_array, "y_" + name + "_" + str(lag_value) + ".npy")
             y_train = np.load(path_y_train)
             # take the last 10 days of November as validation for the parameter search
+
+            if which_model == "model3_sf":
+                path_X_train_full = path.join(path_to_array, "X_" + name + "_" + str(lag_value) + "_full.npy")
+                X_train_full = np.load(path_X_train_full)
+
             X_train = X_train[:-480]
             y_train = y_train[:-480]
             ts.test_true = ts.training_true[-480:]
@@ -230,6 +245,12 @@ if __name__ == "__main__":
                                                                         history, outputs_model = run_parameter_setting2(
                                                                             {"setting": runner, "ts": ts, "X": X_train, "y": y_train,
                                                                              "verbose_para": 1, "save": False})
+                                                                    elif which_model == "model3_sf":
+                                                                        history, outputs_model = run_parameter_setting3(
+                                                                            {"setting": runner, "ts": ts, "X": X_train,
+                                                                             "y": y_train,
+                                                                             "verbose_para": 1, "save": False,
+                                                                             "X_train_full": X_train_full})
                                                                     collected_histories.append(history)
                                                                     collected_outputs.append(outputs_model)
                                                                     clear_session()

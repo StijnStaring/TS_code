@@ -297,13 +297,15 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
     early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
 
     for k in range(setting.nb_epoch):
-        model.fit(x=X,y=y,epochs=1,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
-        epoch_count = k+1
-        print("Epoch number: %s/%s."%(epoch_count,setting.nb_epoch))
-        if np.isnan(history.history['loss'][0]):
-            print("The loss became nan --> try again.")
-            model, history = build_model_stateful1(setting, X, y, verbose_para, save, reset_after_epoch, X_val, y_val)
+        model.fit(x=X, y=y, epochs=1, shuffle=setting.shuffle, batch_size=setting.batch_size_parameter, callbacks=[early_stopping_monitor, history], verbose=verbose_para)
+        epoch_count = k + 1
+        print("Epoch number: %s/%s." % (epoch_count, setting.nb_epoch))
         loss.append(history.history['loss'][0])
+        if np.isnan(history.history['loss'][0]):
+            history.history['loss'] = loss
+            history.history['val_loss'] = val_loss
+            return model, history
+
         if X_val is not None and y_val is not None:
             current_val_lost = history.history['val_loss'][0]
             val_loss.append(current_val_lost)

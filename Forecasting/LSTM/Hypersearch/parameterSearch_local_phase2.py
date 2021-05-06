@@ -34,10 +34,10 @@ class ParameterSearch:
         self.list_lag_value = [1]
         self.list_nb_epoch = [2]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
-        self.list_batch_size_parameter = [48]
+        self.list_batch_size_parameter = [1]
         self.list_learning_rate = [10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
-        self.list_shuffle = ['True']  # shuffling is set to True
+        self.list_shuffle = [False]  # shuffling is set to True
         self.list_repeat = [3]  # four is chosen because have four cores
 
         assert self.list_patience[0] < self.list_nb_epoch[0]
@@ -72,14 +72,23 @@ def run_parameter_setting2(kwargs):
 def run_parameter_setting3(kwargs):
     print("Model 3 running...")
     trained_model, history = build_model_stateful1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
-    print("Model 3 prediction finished...")
-    outputs_model = dict()
-    for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
-        output: float = Switcher(method, all_predictions, all_references)
-        outputs_model[method] = output
+    if not np.isnan(history.history["loss"][-1]):
+        all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
+        print("Model 3 prediction finished...")
+        outputs_model = dict()
+        for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+            output: float = Switcher(method, all_predictions, all_references)
+            outputs_model[method] = output
 
-    return history, outputs_model
+        return history, outputs_model
+    else:
+        outputs_model = dict()
+        for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
+            output: float = np.nan
+            outputs_model[method] = output
+        return history, outputs_model
+
+
 
 
 if __name__ == "__main__":
@@ -138,29 +147,31 @@ if __name__ == "__main__":
     start_time_program = time()
     multithreading = False
     counter = 1
-    regulation_para = [10**-2, 10**-3, 10**-4,10**-5]
-    # dropout_para = [0.2,0.3,0.4,0.5]
+    # regulation_para = [10**-2, 10**-3, 10**-4,10**-5]
+    # regulation_para = [10 ** -5]
+    dropout_para = [0.2,0.3,0.4,0.5]
     for name in names:
         if name == '0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e':
             chosen_parameters = ParameterSearch()
             chosen_parameters.list_learning_rate = [0.0001]
-            chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            # chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            # chosen_parameters.list_dropout_LSTM = dropout_para
+            # chosen_parameters.list_recurrent_dropout_LSTM = dropout_para
+            chosen_parameters.list_dropout_DENSE = dropout_para
+
 
         elif name == '0x1e84e4d5cf1f463147f3e4d566167597423d7769':
             chosen_parameters = ParameterSearch()
             chosen_parameters.list_learning_rate = [0.0001]
-            chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            # chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            # chosen_parameters.list_dropout_LSTM = dropout_para
+            # chosen_parameters.list_recurrent_dropout_LSTM = dropout_para
+            chosen_parameters.list_dropout_DENSE = dropout_para
 
         elif name == '0xc3b2f61a72e188cfd44483fce1bc11d6a628766d':
             chosen_parameters = ParameterSearch()
             chosen_parameters.list_learning_rate = [0.0001]
-            chosen_parameters.list_kernel_regularization_LSTM = regulation_para
-            # chosen_parameters.list_recurrent_regularization_LSTM = regulation_para
-            # chosen_parameters.list_kernel_regularization_DENSE = regulation_para
+            # chosen_parameters.list_dropout_LSTM = dropout_para
+            # chosen_parameters.list_recurrent_dropout_LSTM = dropout_para
+            chosen_parameters.list_dropout_DENSE = dropout_para
 
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
@@ -262,6 +273,7 @@ if __name__ == "__main__":
                                                                              "y": y_train,
                                                                              "verbose_para": 1, "save": False,
                                                                              "X_train_full": X_train_full})
+
                                                                     collected_histories.append(history)
                                                                     collected_outputs.append(outputs_model)
                                                                     clear_session()

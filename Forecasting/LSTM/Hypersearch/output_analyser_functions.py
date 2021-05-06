@@ -4,6 +4,26 @@ import matplotlib.pyplot as plt
 from forecasting_functions import figure_layout
 from os import path
 
+def remove_nan_values(ar):
+    return ar[~np.isnan(ar)]
+
+def get_indices_nan_values_1D_array(array):
+    assert type(array) == np.ndarray
+    assert array.shape == (len(array),)
+    return np.reshape(np.argwhere(np.isnan(array)), -1)
+
+def remove_corresponding_values_nan(array1, array2):
+    """
+    :param array1: array with numbers and no nan values
+    :param array2: array with numbers and nan values
+    :return:
+    """
+    indices = get_indices_nan_values_1D_array(array2)
+    array1 = np.delete(array1,indices)
+    array2 = remove_nan_values(array2)
+    return array1, array2
+
+
 def get_ID_numbers(name:str, number, DF: pd.DataFrame):
     newSerie = DF.loc[[name],:].squeeze()
     newSerie = pd.to_numeric(newSerie)
