@@ -35,38 +35,42 @@ class ParameterSearch:
         self.list_nb_epoch = [2]
         self.list_activation = ['relu'] # found that an activation function of relu gives bad results
         self.list_batch_size_parameter = [1]
-        self.list_learning_rate = [10**-2] # found that 10**-1 gave instable results
+        self.list_learning_rate = [10 ** -2] # found that 10**-1 gave instable results
         self.list_patience = [0]
         self.list_shuffle = [False]  # shuffling is set to True
-        self.list_repeat = [3]  # four is chosen because have four cores
+        self.list_repeat = [1]  # four is chosen because have four cores
 
         assert self.list_patience[0] < self.list_nb_epoch[0]
+
 
 def run_parameter_setting1(kwargs):
     print("Model 1 running...")
     trained_model, history = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
+    visualize_loss(history,True,path.join(output_path,str(kwargs["number"])+".png"))
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, None, True, False)
 
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
-    # show_all_forecasts(all_predictions, all_references, "nameless", False)
     print("Model 1 prediction finished...")
     outputs_model = dict()
     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
         output: float = Switcher(method, all_predictions, all_references)
         outputs_model[method] = output
-
+    save_model(trained_model,
+               path.join(output_path, "model" + str(kwargs["number"]) + "_" + str(outputs_model["MAE"]) + ".h5"))
     return history, outputs_model
 
 def run_parameter_setting2(kwargs):
     print("Model 2 running...")
     trained_model, history = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X"], None, True, False)
+    visualize_loss(history, True, path.join(output_path, str(kwargs["number"]) + ".png"))
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, None, True, False)
 
     print("Model 2 prediction finished...")
     outputs_model = dict()
     for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
         output: float = Switcher(method, all_predictions, all_references)
         outputs_model[method] = output
-
+    save_model(trained_model,
+               path.join(output_path, "model" + str(kwargs["number"]) + "_" + str(outputs_model["MAE"]) + ".h5"))
     return history, outputs_model
 
 def run_parameter_setting3(kwargs):
@@ -90,7 +94,7 @@ def run_parameter_setting3(kwargs):
 
 
 if __name__ == "__main__":
-    which_model = "model3_sf"
+    which_model = "model2_sl"
     Stijn = True
 
     if Stijn:
@@ -108,9 +112,24 @@ if __name__ == "__main__":
     av_temperature = pd.read_csv(path_temperature,index_col="meter_id",parse_dates=True)
 
     name = str(time())
-    makedirs(name, exist_ok=True)
-    output_path = name
-    path_txt_file = path.join(output_path, which_model + "_" + "output_path.txt")
+    if which_model == "model1_sl":
+        makedirs(name, exist_ok=True)
+        output_path = name
+        path_txt_file = path.join(output_path,which_model + "_" + "output_path.txt")
+    elif which_model == "model2_sl":
+        makedirs(name, exist_ok=True)
+        output_path = name
+        path_txt_file = path.join(output_path, which_model + "_" + "output_path.txt")
+
+    elif which_model == "model3_sf":
+        makedirs(name, exist_ok=True)
+        output_path = name
+        path_txt_file = path.join(output_path, which_model + "_" + "output_path.txt")
+
+    else:
+        output_path = ""
+        path_txt_file = ""
+
 
     print("CSV files are loaded...")
 
@@ -130,32 +149,51 @@ if __name__ == "__main__":
     start_time_program = time()
     multithreading = False
     counter = 1
-    learning_rates = [10**-2, 5*10**-3, 2*10**-3, 10**-3, 10**-4, 10**-5, 10**-6]
+
     for name in names:
         if name == '0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e':
             chosen_parameters = ParameterSearch()
             chosen_parameters.list_units_LSTM = [50]
-            chosen_parameters.list_layers_LSTM = [1]
-            chosen_parameters.list_learning_rate = learning_rates
+            chosen_parameters.list_layers_LSTM = [3]
+            chosen_parameters.list_lag_value = [96]
+            chosen_parameters.list_nb_epoch = [150]
+            chosen_parameters.list_batch_size_parameter = [48]
+            chosen_parameters.list_learning_rate = [0.002]
+            chosen_parameters.list_patience = [2]
+            chosen_parameters.list_shuffle = [True]
+            chosen_parameters.list_repeat = [10]
+            chosen_parameters.list_kernel_regularization_LSTM = [10 ** -5]
 
         elif name == '0x1e84e4d5cf1f463147f3e4d566167597423d7769':
             chosen_parameters = ParameterSearch()
             chosen_parameters.list_units_LSTM = [50]
             chosen_parameters.list_layers_LSTM = [3]
-            chosen_parameters.list_learning_rate = learning_rates
-            chosen_parameters.list_recurrent_regularization_LSTM = [10**-3]
-
+            chosen_parameters.list_lag_value = [48]
+            chosen_parameters.list_nb_epoch = [150]
+            chosen_parameters.list_batch_size_parameter = [48]
+            chosen_parameters.list_learning_rate = [10 ** -5]
+            chosen_parameters.list_patience = [2]
+            chosen_parameters.list_shuffle = [True]
+            chosen_parameters.list_repeat = [10]
+            chosen_parameters.list_kernel_regularization_LSTM = [10 ** -3]
 
         elif name == '0xc3b2f61a72e188cfd44483fce1bc11d6a628766d':
             chosen_parameters = ParameterSearch()
-            chosen_parameters.list_units_LSTM = [20]
-            chosen_parameters.list_layers_LSTM = [1]
-            chosen_parameters.list_learning_rate = learning_rates
+            chosen_parameters.list_units_LSTM = [50]
+            chosen_parameters.list_layers_LSTM = [3]
+            chosen_parameters.list_lag_value = [96]
+            chosen_parameters.list_nb_epoch = [150]
+            chosen_parameters.list_batch_size_parameter = [48]
+            chosen_parameters.list_learning_rate = [10 ** -4]
+            chosen_parameters.list_patience = [2]
+            chosen_parameters.list_shuffle = [True]
+            chosen_parameters.list_repeat = [10]
+            chosen_parameters.list_dropout_DENSE = [0.4]
 
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
         logBook = pd.DataFrame(index=logBookIndex)
-        training_result = pd.DataFrame(index=["#epoch", "#training loss final"])
+        training_result = pd.DataFrame(index=["#epoch", "#training loss final", "#validation loss final"])
 
         ts = time_serie(fullYeardata[name], av_temperature)
         setting_identification = 1
@@ -176,7 +214,7 @@ if __name__ == "__main__":
             X_train = X_train[:-480]
             y_train = y_train[:-480]
             ts.test_true = ts.training_true[-480:]
-            # X_train,y_train = unison_shuffled_copies(X_train,y_train) # no val anymore
+            X_train,y_train = unison_shuffled_copies(X_train,y_train)
             print("inputs found...\r\n")
 
             print("The shape of X_train: %s"%(X_train.shape,))
@@ -237,24 +275,31 @@ if __name__ == "__main__":
                                                             else:
                                                                 collected_histories = []
                                                                 collected_outputs = []
-
+                                                                counter_for_loop = 0
                                                                 for iteration in range(repeat):
                                                                     if which_model == "model1_sl":
-                                                                        history,outputs_model = run_parameter_setting1({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False})
+                                                                        history,outputs_model = run_parameter_setting1({"setting": runner,"ts":ts, "X": X_train, "y": y_train, "verbose_para":1, "save": False, "number":iteration})
+
                                                                     elif which_model == "model2_sl":
                                                                         history, outputs_model = run_parameter_setting2(
                                                                             {"setting": runner, "ts": ts, "X": X_train, "y": y_train,
-                                                                             "verbose_para": 1, "save": False})
+                                                                             "verbose_para": 1, "save": False, "number":iteration})
+
                                                                     elif which_model == "model3_sf":
                                                                         history, outputs_model = run_parameter_setting3(
                                                                             {"setting": runner, "ts": ts, "X": X_train,
                                                                              "y": y_train,
                                                                              "verbose_para": 1, "save": False,
                                                                              "X_train_full": X_train_full})
+
                                                                     collected_histories.append(history)
                                                                     collected_outputs.append(outputs_model)
                                                                     clear_session()
                                                                     reset_uids()
+
+                                                                    counter_for_loop += 1
+                                                                    print("Finished %s/%s repeats of Serie: %s."%(counter_for_loop,repeat,name))
+
                                                             with open(path_txt_file,"a") as txt_file:
                                                                 print(20 * "*" + "\r\n")
                                                                 txt_file.write(20 * "*" + "\r\n")
@@ -271,12 +316,17 @@ if __name__ == "__main__":
                                                                     txt_file.write("Run: %s \r\n" % r)
                                                                     print("loss: %s \r\n" % history.history["loss"])
                                                                     txt_file.write("loss: %s \r\n" % history.history["loss"])
-                                                                    # print("val_loss: %s \r\n" % history.history["val_loss"])
-                                                                    # txt_file.write("val_loss: %s \r\n" % history.history["val_loss"])
-                                                                    # training_result[str(setting_identification)+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
-                                                                    training_result[str(setting_identification) + "_run_" + str(r)] = [
-                                                                        len(history.history["loss"]) - patience,
-                                                                        history.history["loss"][-1 - patience]]
+                                                                    print("val_loss: %s \r\n" % history.history["val_loss"])
+                                                                    txt_file.write("val_loss: %s \r\n" % history.history["val_loss"])
+                                                                    if chosen_parameters.list_nb_epoch[0] != len(history.history["loss"]):
+                                                                        training_result[str(setting_identification)+"_run_"+str(r)] = [len(history.history["loss"]) - patience, history.history["loss"][-1-patience], history.history["val_loss"][-1-patience]]
+                                                                    else:
+                                                                        training_result[
+                                                                            str(setting_identification) + "_run_" + str(
+                                                                                r)] = [
+                                                                            len(history.history["loss"]),
+                                                                            history.history["loss"][-1],
+                                                                            history.history["val_loss"][-1]]
 
 
                                                                 for method in ["MSE","RMSE","NRMSE","MAE","MAPE"]:
@@ -289,7 +339,7 @@ if __name__ == "__main__":
                                                                 print("Setting %s/%s is completed"%(setting_identification, amount_of_possibilities))
                                                                 txt_file.write("Setting %s/%s is completed\r\n" % (setting_identification, amount_of_possibilities))
                                                                 duration = end_time-start_time
-                                                                predicted_finish = (amount_of_possibilities*len(names)- counter)*duration
+                                                                predicted_finish = (amount_of_possibilities*len(names)*chosen_parameters.list_repeat[0]- counter)*duration
                                                                 print("The elapsed time to calculate one parameter is: %s minutes \r\n"%(duration/60))
                                                                 txt_file.write("The elapsed time to calculate one parameter is: %s minutes\n" % (duration/60))
                                                                 print("The expected remaining running time is: %s minutes.\r\n"%(predicted_finish/60))

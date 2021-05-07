@@ -111,7 +111,7 @@ def get_all_days_of_year(serie: pd.Series)->set:
         collection.add(date.dayofyear)
     return collection
 
-def visualize_loss(history):
+def visualize_loss(history, save = False, path:str = ""):
     loss = history.history["loss"]
     val_loss = history.history["val_loss"]
     epochs = range(len(loss))
@@ -119,7 +119,9 @@ def visualize_loss(history):
     plt.plot(epochs, loss, "b", label="Training loss")
     plt.plot(epochs, val_loss, "r", label="Validation loss")
     plt.legend()
-    # plt.show()
+    if save:
+        plt.savefig(path, dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None,
+                    transparent=False, bbox_inches='tight', pad_inches=0.1, metadata=None)
 
 def generate_training_validation_division(data: np.ndarray, reference: np.array, batch_size: int = 32, ratio: float = 0.9):
     # policy is that the oldest data is thrown away.
@@ -177,7 +179,7 @@ def build_model_stateless1(setting: forecast_setting, X, y, verbose_para: int = 
     This model doesn't expects a pre-made validation set.
     The validation split is set on 10%.
     """
-    print("Warning: the validation set is turned off.")
+    print("Warning: the validation set is turned on.")
     history = History()
     model = Sequential()
 
@@ -200,7 +202,7 @@ def build_model_stateless1(setting: forecast_setting, X, y, verbose_para: int = 
     early_stopping_monitor = EarlyStopping(patience=setting.patience,restore_best_weights=True)
     try:
         # The validation is removed during the parameter search --> This has to be added again when parameters are chosen.
-        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
+        model.fit(x=X,y=y,epochs=setting.nb_epoch,shuffle= setting.shuffle, validation_split= 0.10, batch_size=setting.batch_size_parameter,callbacks=[early_stopping_monitor,history],verbose=verbose_para)
     except:
         print("Training of Model 1 went wrong --> try again")
         model, history = build_model_stateless1(setting, X, y, verbose_para = 1, save = False)
@@ -222,7 +224,7 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
     """
     The model adds a flatten layer after the output of the last LSTM layer which outputs a matrix that is made of the different vectors at each timestep.
     """
-    print("Warning: the validation set is turned off.")
+    print("Warning: the validation set is turned on.")
     history = History()
     model = Sequential()
 
@@ -244,9 +246,9 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
                     activity_regularizer=setting.activity_regularizer_DENSE))
     model.compile(optimizer=optimizers.Adam(lr=setting.learning_rate, beta_1=0.9, beta_2=0.999), loss='mse')
     early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
-    # validation is removed!! This should be changed when not doing parameter search --> use 10% for early stopping
+
     try:
-        model.fit(x=X, y=y, epochs=setting.nb_epoch, shuffle=setting.shuffle, batch_size=setting.batch_size_parameter,
+        model.fit(x=X, y=y, epochs=setting.nb_epoch, validation_split= 0.10, shuffle=setting.shuffle, batch_size=setting.batch_size_parameter,
               callbacks=[early_stopping_monitor, history], verbose=verbose_para)
     except:
         print("Training of Model 2 went wrong --> try again")
