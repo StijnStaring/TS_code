@@ -111,6 +111,17 @@ def get_all_days_of_year(serie: pd.Series)->set:
         collection.add(date.dayofyear)
     return collection
 
+def calculate_daily_mean(metric: str, predictions: pd.Series, reference: pd.Series):
+    days = []
+    collection = []
+    for int_day in get_all_days_of_year(predictions):
+        ts = predictions[predictions.index.dayofyear == int_day].index[0]
+        days.append(ts)
+        sub_pred = predictions[predictions.index.dayofyear == int_day]
+        sub_ref = reference[reference.index.dayofyear == int_day]
+        collection.append(Switcher(metric, sub_pred, sub_ref))
+    return pd.Series(data= collection, index= days)
+
 def visualize_loss(history, save = False, path:str = ""):
     loss = history.history["loss"]
     val_loss = history.history["val_loss"]
