@@ -268,7 +268,7 @@ def build_model_stateless2(setting: forecast_setting, X, y, verbose_para: int = 
     return model, history
 
 
-def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True, X_val = None, y_val = None):
+def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1, save: bool = False, reset_after_epoch: bool = True):
     print("Warning: the validation set is turned off --> activate by putting it in the fit function.")
     assert not setting.shuffle
     assert setting.batch_size_parameter == 1
@@ -299,29 +299,29 @@ def build_model_stateful1(setting: forecast_setting, X, y, verbose_para: int = 1
     early_stopping_monitor = EarlyStopping(patience=setting.patience, restore_best_weights=True)
 
     for k in range(setting.nb_epoch):
-        model.fit(x=X, y=y, epochs=1, shuffle=setting.shuffle, batch_size=setting.batch_size_parameter, callbacks=[early_stopping_monitor, history], verbose=verbose_para)
+        model.fit(x=X, y=y, epochs=1, shuffle=setting.shuffle,validation_split=0.10, batch_size=setting.batch_size_parameter, callbacks=[early_stopping_monitor, history], verbose=verbose_para)
         epoch_count = k + 1
         print("Epoch number: %s/%s." % (epoch_count, setting.nb_epoch))
         loss.append(history.history['loss'][0])
         if np.isnan(history.history['loss'][0]):
+            model.reset_states()
             history.history['loss'] = loss
             history.history['val_loss'] = val_loss
             return model, history
 
-        if X_val is not None and y_val is not None:
-            current_val_lost = history.history['val_loss'][0]
-            val_loss.append(current_val_lost)
+        current_val_lost = history.history['val_loss'][0]
+        val_loss.append(current_val_lost)
 
-            if current_val_lost < tracking[0]:
+        if current_val_lost < tracking[0]:
+            model.reset_states() # not necessary
+            weights = model.get_weights()
+            tracking = [current_val_lost]
+        else:
+            tracking.append(current_val_lost)
+            if len(tracking) == setting.patience + 1:
                 model.reset_states() # not necessary
-                weights = model.get_weights()
-                tracking = [current_val_lost]
-            else:
-                tracking.append(current_val_lost)
-                if len(tracking) == setting.patience + 1:
-                    model.reset_states() # not necessary
-                    model.set_weights(weights)
-                    break
+                model.set_weights(weights)
+                break
 
         if reset_after_epoch:
             model.reset_states()
@@ -387,8 +387,8 @@ def daily_prediction(model: Sequential, TS_norm_full: pd.Series, temperature_nor
     return history_predictions, history_reference
 
 
-def get_X_train_till_day(X_train_full, day_int, setting: forecast_setting, serie: pd.Series):
-    assert setting.lag_value == 1
+def get_X_train_till_day(X_train_full, day_int, lag_value, serie: pd.Series):
+    assert lag_value == 1
     # prev_day = serie[serie.index.dayofyear == (day_int - 1)]
     end = 48*(day_int - 1)
     X_train = X_train_full[:end, :, :]
@@ -396,26 +396,26 @@ def get_X_train_till_day(X_train_full, day_int, setting: forecast_setting, serie
     return X_train
 
 
-def test_set_prediction(model: Sequential, setting: forecast_setting, serie: time_serie, test_set:pd.Series, X_train_full, real_values: bool = True, seeding: bool = False):
+def test_set_prediction(model: Sequential, lag_value, serie: time_serie, test_set:pd.Series, X_train_full, real_values: bool = True, seeding: bool = False):
     # assumption that the test set has no gaps in the dates is not valid.
 
     collection = list(get_all_days_of_year(test_set))
     day_int = collection[0]
     if seeding:
-        X_train = get_X_train_till_day(X_train_full, day_int, setting, serie.TS_norm_full)
+        X_train = get_X_train_till_day(X_train_full, day_int, lag_value, serie.TS_norm_full)
         model = do_seeding(X_train, None, model)
     daily_time_stamps = test_set[test_set.index.dayofyear == day_int].index
-    (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
+    (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, lag_value, daily_time_stamps)
     all_predictions = history_predictions
     all_references = history_reference
 
     if len(collection) > 1:
         for day_int in collection[1:]:
             if seeding:
-                X_train = get_X_train_till_day(X_train_full, day_int, setting, serie.TS_norm_full)
+                X_train = get_X_train_till_day(X_train_full, day_int, lag_value, serie.TS_norm_full)
                 model = do_seeding(X_train, None, model)
             daily_time_stamps = test_set[test_set.index.dayofyear == day_int].index
-            (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, setting.lag_value, daily_time_stamps)
+            (history_predictions, history_reference) = daily_prediction(model, serie.TS_norm_full, serie.temperature_norm, lag_value, daily_time_stamps)
             all_predictions = all_predictions.append(history_predictions)
             all_references = all_references.append(history_reference)
 

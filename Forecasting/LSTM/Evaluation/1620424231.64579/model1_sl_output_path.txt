@@ -1,9 +1,0 @@
-Running this file on a PC with 4 cores...
-Found 1 sets of parameters.
-********************
-This is model: model1_sl. 
-This is setting identifier 1 
-********************
-Run: 1 
-loss: [0.00945549944092973, 0.008592557106742877] 
-val_loss: [0.009728899440200419, 0.00924573150776052] 

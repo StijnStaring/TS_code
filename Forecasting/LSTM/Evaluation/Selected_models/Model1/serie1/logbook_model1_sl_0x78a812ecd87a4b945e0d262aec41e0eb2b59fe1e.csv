@@ -14,10 +14,10 @@ kernel_regularizer_DENSE,None
 bais_regularizer_DENSE,None
 activity_regularizer_DENSE,None
 lag_value,96
-nb_epoch,2
+nb_epoch,150
 activation,relu
 batch_size_parameter,48
 learning_rate,0.005
 patience,2
 shuffle,True
-repeat,1
+repeat,10
