@@ -88,7 +88,7 @@ class time_serie:
         temp_true = TS_norm[TS_norm.index.month != 12]
         test_true = TS_norm[TS_norm.index.month == 12]
         # remove from the test set all the days that contain nan values -> only estimate real days
-        test_true.dropna(inplace=True)
+        # test_true.dropna(inplace=True)
         # substitute the missing values
         temp = substitute_missing_values(temp)
         training = temp[0:672]
@@ -111,7 +111,7 @@ def get_all_days_of_year(serie: pd.Series)->set:
         collection.add(date.dayofyear)
     return collection
 
-def calculate_daily_mean(metric: str, predictions: pd.Series, reference: pd.Series):
+def calculate_daily_mean(metric: str, predictions: pd.Series, reference: pd.Series)-> pd.Series:
     days = []
     collection = []
     for int_day in get_all_days_of_year(predictions):
@@ -704,8 +704,8 @@ def show_forecast(all_predictions, all_references, ID: str, day_int: str, save: 
     axis = figure_layout(figsize=(10,8),titel="",xlabel="date",ylabel="kWh", dpi= 300)
     labels = ["True Future", "Model Prediction"]
 
-    all_references.plot(ax=axis, lw= 3.0, grid= True)
-    all_predictions.plot(ax=axis, lw= 3.0, grid= True)
+    all_references.plot(ax=axis, lw= 3.0, grid= True, fontsize= 26)
+    all_predictions.plot(ax=axis, lw= 3.0, grid= True, fontsize= 26)
     axis.legend(labels)
 
     if save:

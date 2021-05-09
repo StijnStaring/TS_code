@@ -276,9 +276,9 @@ def autolabel(rects,ax):
     """
     for rect in rects:
         height = rect.get_height()
-        ax.text(rect.get_x() + rect.get_width()/2., 1.01*height,
+        ax.text(rect.get_x() + rect.get_width()/2., 1.0001*height,
                 '%s' % np.around(height,4),
-                ha='center', va='bottom', fontweight='bold',fontsize=16)
+                ha='center', va='bottom', fontweight='bold',fontsize=26)
 
 # from forecasting_functions import figure_layout
 # def create_barplot(titels: list, values: list, fig_titel:str, save:bool = False):

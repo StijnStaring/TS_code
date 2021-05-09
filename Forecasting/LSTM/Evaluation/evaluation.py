@@ -47,7 +47,7 @@ def run_parameter_setting1(kwargs):
     print("Model 1 running...")
     trained_model, history = build_model_stateless1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
     visualize_loss(history,True,path.join(output_path,str(kwargs["number"])+"_"+name+".png"))
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, None, True, False)
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"].lag_value, kwargs["ts"], kwargs["ts"].test_true, None, True, False)
 
     print("Model 1 prediction finished...")
     outputs_model = dict()
@@ -62,7 +62,7 @@ def run_parameter_setting2(kwargs):
     print("Model 2 running...")
     trained_model, history = build_model_stateless2(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
     visualize_loss(history,True,path.join(output_path,str(kwargs["number"])+"_"+name+".png"))
-    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, None, True, False)
+    all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"].lag_value, kwargs["ts"], kwargs["ts"].test_true, None, True, False)
 
     print("Model 2 prediction finished...")
     outputs_model = dict()
@@ -77,7 +77,7 @@ def run_parameter_setting3(kwargs):
     print("Model 3 running...")
     trained_model, history = build_model_stateful1(kwargs["setting"], kwargs["X"], kwargs["y"], kwargs["verbose_para"], kwargs["save"])
     if not np.isnan(history.history["loss"][-1]):
-        all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"], kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
+        all_predictions, all_references = test_set_prediction(trained_model, kwargs["setting"].lag_value, kwargs["ts"], kwargs["ts"].test_true, kwargs["X_train_full"], True, True)
         print("Model 3 prediction finished...")
         outputs_model = dict()
         for method in ["MSE", "RMSE", "NRMSE", "MAE", "MAPE"]:
@@ -95,7 +95,7 @@ def run_parameter_setting3(kwargs):
 
 
 if __name__ == "__main__":
-    which_model = "model3_sf"
+    which_model = "model2_sl"
     Stijn = True
 
     if Stijn:
@@ -155,39 +155,41 @@ if __name__ == "__main__":
         if name == '0x78a812ecd87a4b945e0d262aec41e0eb2b59fe1e':
             chosen_parameters = ParameterSearch()
             chosen_parameters.list_units_LSTM = [50]
-            chosen_parameters.list_layers_LSTM = [1]
-            chosen_parameters.list_lag_value = [1]
+            chosen_parameters.list_layers_LSTM = [3]
+            chosen_parameters.list_lag_value = [96]
             chosen_parameters.list_nb_epoch = [150]
-            chosen_parameters.list_batch_size_parameter = [1]
-            chosen_parameters.list_learning_rate = [10**-4]
+            chosen_parameters.list_batch_size_parameter = [48]
+            chosen_parameters.list_learning_rate = [0.002]
             chosen_parameters.list_patience = [5]
-            chosen_parameters.list_shuffle = [False]
+            chosen_parameters.list_shuffle = [True]
             chosen_parameters.list_repeat = [10]
+            chosen_parameters.list_kernel_regularization_LSTM = [10 ** -5]
 
         elif name == '0x1e84e4d5cf1f463147f3e4d566167597423d7769':
             chosen_parameters = ParameterSearch()
             chosen_parameters.list_units_LSTM = [50]
             chosen_parameters.list_layers_LSTM = [3]
-            chosen_parameters.list_lag_value = [1]
+            chosen_parameters.list_lag_value = [48]
             chosen_parameters.list_nb_epoch = [150]
-            chosen_parameters.list_batch_size_parameter = [1]
-            chosen_parameters.list_learning_rate = [10**-6]
+            chosen_parameters.list_batch_size_parameter = [48]
+            chosen_parameters.list_learning_rate = [10 ** -5]
             chosen_parameters.list_patience = [5]
-            chosen_parameters.list_shuffle = [False]
+            chosen_parameters.list_shuffle = [True]
             chosen_parameters.list_repeat = [10]
-            chosen_parameters.list_recurrent_regularization_LSTM = [10 ** -3]
+            chosen_parameters.list_kernel_regularization_LSTM = [10 ** -3]
 
         elif name == '0xc3b2f61a72e188cfd44483fce1bc11d6a628766d':
             chosen_parameters = ParameterSearch()
-            chosen_parameters.list_units_LSTM = [20]
-            chosen_parameters.list_layers_LSTM = [1]
-            chosen_parameters.list_lag_value = [1]
+            chosen_parameters.list_units_LSTM = [50]
+            chosen_parameters.list_layers_LSTM = [3]
+            chosen_parameters.list_lag_value = [96]
             chosen_parameters.list_nb_epoch = [150]
-            chosen_parameters.list_batch_size_parameter = [1]
-            chosen_parameters.list_learning_rate = [10**-4]
+            chosen_parameters.list_batch_size_parameter = [48]
+            chosen_parameters.list_learning_rate = [10 ** -4]
             chosen_parameters.list_patience = [5]
-            chosen_parameters.list_shuffle = [False]
+            chosen_parameters.list_shuffle = [True]
             chosen_parameters.list_repeat = [10]
+            chosen_parameters.list_dropout_DENSE = [0.4]
 
         error = pd.DataFrame()
         logBookIndex = list(vars(forecast_setting()).keys())
